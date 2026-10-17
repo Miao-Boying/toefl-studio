@@ -6,7 +6,7 @@
      l'assemblage), aucune ressource externe ne se charge, aucune donnée ne
      part vers un serveur. GitHub Pages ne permet pas d'en-têtes HTTP : la
      politique est donc posée ici, en balise meta. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LnvymZ0nllj5Nq/mwyJWtBkkWEkozqkQxctocEHpCm8='; style-src 'unsafe-inline'; img-src data:; media-src blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fmj/qm030REL7VylZC5qtoWlaiuQ+Z+a8JyJkTFKfpE='; style-src 'unsafe-inline'; img-src data:; media-src blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maîtriser l'anglais — Studio d'entraînement oral</title>
@@ -330,6 +330,9 @@ function renderMenu(){
   });
 }
 function goTo(id){
+  /* Quitter la rubrique Speaking coupe le micro et le minuteur : sinon
+     l'enregistrement continuerait, invisible, pendant qu'on lit autre chose. */
+  if (id !== 'speaking') { lrReset(); ivReset(); }
   currentView = id;
   renderMenu();
   qs('#headerTitle').textContent = MENU.find(function(m){ return m.id===id; }).label;
@@ -656,8 +659,8 @@ let spTab = 1;
 let lrState = { phrase:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false };
 let ivState = { sujet:null, mode:'idle', prepSeconds:0, speakSeconds:0, timerHandle:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false };
 
-function lrReset(){ if (lrState.stream) lrState.stream.getTracks().forEach(function(t){t.stop();}); lrState = { phrase:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false }; }
-function ivReset(){ if (ivState.timerHandle) clearInterval(ivState.timerHandle); if (ivState.stream) ivState.stream.getTracks().forEach(function(t){t.stop();}); ivState = { sujet:null, mode:'idle', prepSeconds:0, speakSeconds:0, timerHandle:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false }; }
+function lrReset(){ if (lrState.stream) lrState.stream.getTracks().forEach(function(t){t.stop();}); if (lrState.audioUrl) URL.revokeObjectURL(lrState.audioUrl); lrState = { phrase:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false }; }
+function ivReset(){ if (ivState.timerHandle) clearInterval(ivState.timerHandle); if (ivState.stream) ivState.stream.getTracks().forEach(function(t){t.stop();}); if (ivState.audioUrl) URL.revokeObjectURL(ivState.audioUrl); ivState = { sujet:null, mode:'idle', prepSeconds:0, speakSeconds:0, timerHandle:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false }; }
 
 function renderSpeaking(){
   const tacheLR = SPEAKING.taches.find(function(t){ return t.type==='listen_repeat'; });
@@ -806,6 +809,7 @@ function startMicRecording(state, zoneId){
     state.chunks = [];
     state.recorder.ondataavailable = function(e){ state.chunks.push(e.data); };
     state.recorder.onstop = function(){
+      if (state !== lrState && state !== ivState) return; // exercice abandonné : rien à rejouer
       const blob = new Blob(state.chunks, {type:'audio/webm'});
       state.audioUrl = URL.createObjectURL(blob);
       renderMicZone(state, zoneId);
