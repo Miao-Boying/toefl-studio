@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<!-- Sécurité : seul le script de cette page s'exécute (empreinte calculée à
+     l'assemblage), aucune ressource externe ne se charge, aucune donnée ne
+     part vers un serveur. GitHub Pages ne permet pas d'en-têtes HTTP : la
+     politique est donc posée ici, en balise meta. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LnvymZ0nllj5Nq/mwyJWtBkkWEkozqkQxctocEHpCm8='; style-src 'unsafe-inline'; img-src data:; media-src blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maîtriser l'anglais — Studio d'entraînement oral</title>
+<style>
+/* Design : studio d'enregistrement radio. Console sombre teintée, pastille
+   rouge « ON AIR » pour les exercices oraux, barres façon vu-mètre pour les
+   scores et la progression. Volontairement différent du thème « passeport »
+   utilisé pour le TCF Canada. */
+:root {
+  --bg:#EFEDE7; --surf:#FFFFFF; --ink:#1B2430; --mut:#667085; --line:#D8D4CB;
+  --accent:#0F6E63; --accent-l:#E2EFEC;
+  --seal:#C8862E; --seal-l:#F6E8D3;
+  --rec:#C23B3B; --rec-l:#F8E1DF;
+  --ok:#2E7D4F; --ok-l:#E3F3E9;
+  --warn:#B5651D; --warn-l:#F8E8DA;
+  --no:#AA3434; --no-l:#F7E3E3;
+  --f-display: 'Segoe UI Semibold', 'Segoe UI', Arial, sans-serif;
+  --f-body: 'Segoe UI', 'Noto Sans', Calibri, sans-serif;
+  --f-mono: Consolas, 'Cascadia Mono', 'SF Mono', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#0D1116; --surf:#161B22; --ink:#E7E5DD; --mut:#9199A6; --line:#2A313C;
+    --accent:#4FD1BE; --accent-l:#13302C;
+    --seal:#E3A857; --seal-l:#2E2311;
+    --rec:#FF6B61; --rec-l:#301A1A;
+    --ok:#6FCB94; --ok-l:#163023;
+    --warn:#E0A661; --warn-l:#2E2116;
+    --no:#FF6B61; --no-l:#301A1A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#0D1116; --surf:#161B22; --ink:#E7E5DD; --mut:#9199A6; --line:#2A313C;
+  --accent:#4FD1BE; --accent-l:#13302C;
+  --seal:#E3A857; --seal-l:#2E2311;
+  --rec:#FF6B61; --rec-l:#301A1A;
+  --ok:#6FCB94; --ok-l:#163023;
+  --warn:#E0A661; --warn-l:#2E2116;
+  --no:#FF6B61; --no-l:#301A1A;
+  color-scheme: dark;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--f-body); background:var(--bg); color:var(--ink); line-height:1.6; }
+
+.container { display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
+
+.menu { background:var(--surf); border-right:1px solid var(--line); overflow-y:auto; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; }
+.menu-brand { padding:22px 20px 16px; border-bottom:1px solid var(--line); }
+.onair { display:inline-flex; align-items:center; gap:6px; font-family:var(--f-mono); font-size:11px; letter-spacing:1.5px; color:var(--rec); text-transform:uppercase; }
+.onair .dot { width:7px; height:7px; border-radius:50%; background:var(--rec); animation:blink 1.6s infinite; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.25;} }
+.menu-brand .name { font-family:var(--f-display); font-weight:800; font-size:18px; color:var(--accent); margin-top:6px; line-height:1.3; }
+.menu-brand .sub { font-size:12px; color:var(--mut); margin-top:4px; }
+.waveform { display:flex; align-items:flex-end; gap:2px; height:16px; margin-top:10px; }
+.waveform span { width:3px; background:var(--accent); opacity:.6; border-radius:1px; }
+.menu-scroll { overflow-y:auto; flex:1; padding:14px 0; }
+.menu-item { display:block; width:100%; padding:11px 20px; color:var(--ink); text-decoration:none; font-size:14px; border-left:3px solid transparent; cursor:pointer; background:none; border-top:none; border-right:none; border-bottom:none; text-align:left; font-family:inherit; }
+.menu-item:hover { background:var(--accent-l); color:var(--accent); }
+.menu-item.active { background:var(--accent-l); border-left-color:var(--accent); color:var(--accent); font-weight:bold; }
+.menu-footer { padding:14px 20px; border-top:1px solid var(--line); display:flex; gap:10px; align-items:center; font-size:12px; color:var(--mut); }
+.dev-credit { padding:0 20px 14px; font-size:11px; color:var(--mut); letter-spacing:.3px; }
+.theme-toggle { background:none; border:1px solid var(--line); color:var(--ink); border-radius:3px; cursor:pointer; padding:4px 9px; font-size:14px; }
+
+.main { min-width:0; }
+.header { display:flex; align-items:center; gap:14px; padding:16px 32px; border-bottom:1px solid var(--line); background:var(--surf); position:sticky; top:0; z-index:5; }
+.header-code { font-family:var(--f-mono); font-size:11px; letter-spacing:1px; color:var(--seal); text-transform:uppercase; white-space:nowrap; }
+.header-title { font-weight:800; font-size:16px; color:var(--accent); font-family:var(--f-display); }
+.view { padding:32px; max-width:980px; }
+
+h1 { font-family:var(--f-display); font-weight:800; font-size:25px; margin-bottom:6px; line-height:1.25; }
+h2 { font-family:var(--f-display); font-weight:700; font-size:18px; margin:24px 0 10px; line-height:1.3; }
+h3 { font-size:15px; margin:18px 0 8px; }
+p { margin:10px 0; }
+ul, ol { margin:10px 0 10px 22px; }
+li { margin:5px 0; }
+.lead { color:var(--mut); font-size:15px; }
+a { color:var(--accent); }
+code { background:var(--accent-l); padding:1px 5px; border-radius:2px; font-family:var(--f-mono); font-size:13px; }
+.en { font-style:italic; }
+
+.banner { background:var(--accent-l); border:1px solid var(--accent); border-radius:6px; padding:14px 18px; margin:16px 0 22px; font-size:14px; }
+.banner b { color:var(--accent); }
+.banner.rec { background:var(--rec-l); border-color:var(--rec); }
+.disclaimer { font-size:12px; color:var(--mut); border-top:1px dashed var(--line); margin-top:16px; padding-top:10px; }
+
+.global-level { display:flex; align-items:center; gap:18px; background:var(--surf); border:1px solid var(--line); border-radius:10px; padding:18px 22px; margin:16px 0 22px; }
+.global-level .digit { font-family:var(--f-mono); font-size:38px; font-weight:bold; color:var(--accent); }
+.global-level .txt { font-size:13px; color:var(--mut); }
+
+.card-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin:18px 0; }
+@media (max-width:760px) { .card-grid { grid-template-columns:1fr; } }
+.skill-card { background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:18px; position:relative; }
+.skill-card .tag { font-family:var(--f-mono); font-size:11px; letter-spacing:1px; color:var(--seal); text-transform:uppercase; }
+.skill-card h3 { margin-top:4px; font-family:var(--f-display); font-weight:700; font-size:16px; }
+.skill-card .fmt { font-size:12px; color:var(--mut); margin:4px 0 10px; }
+.skill-card .result { font-size:13px; margin:4px 0; }
+.stamp { display:inline-block; font-family:var(--f-mono); font-size:11px; font-weight:bold; padding:3px 9px; border-radius:11px; letter-spacing:.5px; }
+.stamp.ok { background:var(--ok-l); color:var(--ok); }
+.stamp.warn { background:var(--warn-l); color:var(--warn); }
+.stamp.no { background:var(--no-l); color:var(--no); }
+.stamp.neutral { background:var(--line); color:var(--mut); }
+.btn { display:inline-block; margin-top:10px; background:var(--accent); color:#fff; border:none; border-radius:5px; padding:9px 16px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+.btn:hover { opacity:.9; }
+.btn.secondary { background:var(--surf); color:var(--accent); border:1px solid var(--accent); }
+.btn.ghost { background:none; color:var(--mut); border:1px solid var(--line); }
+.btn.rec { background:var(--rec); }
+.btn[disabled] { opacity:.5; cursor:not-allowed; }
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; }
+
+.level-tags { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
+.level-tag { font-family:var(--f-mono); font-size:12px; padding:5px 11px; border-radius:14px; border:1px solid var(--line); background:var(--surf); cursor:pointer; color:var(--ink); }
+.level-tag.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.filter-label { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--mut); margin-top:14px; }
+
+.question-box { background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:20px; margin:16px 0; }
+.question-meta { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--mut); margin-bottom:10px; font-family:var(--f-mono); }
+.listen-text { background:var(--accent-l); border-radius:6px; padding:14px; margin:10px 0; font-size:14px; }
+.question-text { font-weight:bold; margin:12px 0 10px; font-size:15px; }
+.choice-btn { display:block; width:100%; text-align:left; background:var(--surf); border:1px solid var(--line); border-radius:6px; padding:10px 14px; margin:7px 0; cursor:pointer; font-family:inherit; font-size:14px; color:var(--ink); }
+.choice-btn:hover:not([disabled]) { border-color:var(--accent); }
+.choice-btn.correct { background:var(--ok-l); border-color:var(--ok); color:var(--ok); font-weight:bold; }
+.choice-btn.wrong { background:var(--no-l); border-color:var(--no); color:var(--no); }
+.choice-btn[disabled] { cursor:default; }
+.explication { background:var(--seal-l); border-radius:6px; padding:12px 14px; margin-top:12px; font-size:13px; color:var(--ink); }
+.progress-line { font-family:var(--f-mono); font-size:12px; color:var(--mut); margin-bottom:8px; }
+
+.tache-tabs { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
+.tache-tab { padding:9px 15px; border-radius:6px; border:1px solid var(--line); background:var(--surf); cursor:pointer; font-size:13px; font-family:inherit; }
+.tache-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.sujet-box { background:var(--accent-l); border-radius:6px; padding:16px; margin:14px 0; font-size:15px; font-weight:bold; }
+.phrase-box { background:var(--accent-l); border-radius:6px; padding:18px; margin:14px 0; font-size:20px; font-weight:bold; text-align:center; }
+.conseil-box { background:var(--seal-l); border-radius:6px; padding:12px 14px; margin:8px 0 14px; font-size:13px; }
+.timer { font-family:var(--f-mono); font-size:28px; color:var(--accent); margin:10px 0; }
+.timer.rec { color:var(--rec); }
+.timer-label { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:1px; }
+textarea.ee-text { width:100%; min-height:220px; padding:14px; border:1px solid var(--line); border-radius:6px; font-family:var(--f-body); font-size:14px; background:var(--surf); color:var(--ink); resize:vertical; }
+.wordcount { font-family:var(--f-mono); font-size:13px; margin-top:6px; }
+.wordcount.ok { color:var(--ok); }
+.wordcount.warn { color:var(--warn); }
+.wordcount.neutral { color:var(--mut); }
+
+.grille-table { width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; }
+.grille-table th, .grille-table td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+.grille-table th { background:var(--accent-l); font-family:var(--f-display); }
+.slider-row { margin:14px 0; }
+.slider-row .crit-name { font-size:13px; font-weight:bold; margin-bottom:4px; }
+.slider-row .crit-desc { font-size:12px; color:var(--mut); margin-bottom:6px; }
+.slider-row input[type=range] { width:100%; }
+.slider-row .val { font-family:var(--f-mono); color:var(--accent); font-weight:bold; }
+.note-total { font-family:var(--f-mono); font-size:22px; color:var(--accent); margin:14px 0; }
+
+.history-list { font-size:13px; margin:10px 0; }
+.history-list li { list-style:none; border-bottom:1px solid var(--line); padding:6px 0; display:flex; justify-content:space-between; }
+
+table.bareme { width:100%; border-collapse:collapse; margin:16px 0; font-size:13px; }
+table.bareme th, table.bareme td { border:1px solid var(--line); padding:9px 11px; text-align:center; }
+table.bareme th { background:var(--accent-l); font-family:var(--f-display); }
+table.bareme tr.target td { background:var(--seal-l); font-weight:bold; }
+table.bareme td.txt-gauche { text-align:left; }
+
+.audio-box { margin:12px 0; }
+.audio-box audio { width:100%; margin-top:8px; }
+.mic-msg { font-size:12px; color:var(--mut); margin-top:6px; }
+.rec-live { display:inline-flex; align-items:center; gap:6px; color:var(--rec); font-family:var(--f-mono); font-size:12px; }
+.rec-live .dot { width:8px; height:8px; border-radius:50%; background:var(--rec); animation:blink 1s infinite; }
+</style>
+</head>
+<body>
+<div class="container">
+  <nav class="menu">
+    <div class="menu-brand">
+      <div class="onair"><span class="dot"></span>Studio d'entraînement</div>
+      <div class="name">Maîtriser l'anglais</div>
+      <div class="sub">Nouveau format TOEFL iBT 2026 · 4 compétences</div>
+      <div class="waveform" id="brandWave"></div>
+    </div>
+    <div class="menu-scroll" id="menuScroll"></div>
+    <div class="menu-footer">
+      <button class="theme-toggle" id="themeToggle" title="Changer de thème">◐</button>
+      <span>Hors ligne, aucune donnée transmise</span>
+    </div>
+    <div class="dev-credit">Développé par ASSEREOU BRICE AGOSSOU</div>
+  </nav>
+  <div class="main">
+    <header class="header">
+      <div>
+        <div class="header-code" id="headerCode">ON AIR — ENGLISH</div>
+        <div class="header-title" id="headerTitle">Tableau de bord</div>
+      </div>
+    </header>
+    <div class="view" id="view"></div>
+  </div>
+</div>
+
+<script>
+const READING = {"epreuve": "Reading", "description_format": "Lisez le texte proposé, puis répondez à la question. Comme à l'examen officiel, vous ne disposez d'aucune aide pour traduire : entraînez-vous à comprendre directement en anglais.", "nb_questions_officiel": 50, "duree_minutes": 30, "types_officiels": [{"code": "complete_the_words", "nom": "Complete the Words"}, {"code": "daily_life", "nom": "Read in Daily Life"}, {"code": "academic_passage", "nom": "Read an Academic Passage"}], "questions": [{"type": "complete_the_words", "niveau": 1, "texte": "I usually dr_nk coffee in the morning.", "question": "Which word completes the sentence?", "choix": ["drink", "dream", "drive", "draw"], "reponse": 0, "explication": "« Drink » convient : le café est une boisson, et la phrase décrit une habitude du matin."}, {"type": "complete_the_words", "niveau": 1, "texte": "My sister is a t_cher at the local school.", "question": "Which word completes the sentence?", "choix": ["teacher", "traveler", "tailor", "trainer"], "reponse": 0, "explication": "Le contexte « school » indique une enseignante."}, {"type": "complete_the_words", "niveau": 2, "texte": "We need to b_y some bread before the shop closes.", "question": "Which word completes the sentence?", "choix": ["buy", "borrow", "bring", "build"], "reponse": 0, "explication": "On achète du pain dans un magasin avant sa fermeture."}, {"type": "complete_the_words", "niveau": 2, "texte": "The weather was so c_ld that we stayed inside all day.", "question": "Which word completes the sentence?", "choix": ["cold", "calm", "clear", "crowded"], "reponse": 0, "explication": "Rester à l'intérieur toute la journée suggère un temps froid."}, {"type": "complete_the_words", "niveau": 3, "texte": "She was very ne_vous before her job interview.", "question": "Which word completes the sentence?", "choix": ["nervous", "generous", "curious", "serious"], "reponse": 0, "explication": "Il est courant d'être nerveux avant un entretien d'embauche."}, {"type": "complete_the_words", "niveau": 3, "texte": "The company decided to inc_ease the price of its products.", "question": "Which word completes the sentence?", "choix": ["increase", "introduce", "include", "invite"], "reponse": 0, "explication": "On parle du prix qui change : « increase » (augmenter)."}, {"type": "complete_the_words", "niveau": 4, "texte": "His argument was based on a f_lse assumption about the data.", "question": "Which word completes the sentence?", "choix": ["false", "fragile", "flexible", "fluent"], "reponse": 0, "explication": "Une hypothèse peut être fausse (« false »)."}, {"type": "complete_the_words", "niveau": 4, "texte": "The negotiations were su_pended after both sides failed to agree.", "question": "Which word completes the sentence?", "choix": ["suspended", "supported", "submitted", "suggested"], "reponse": 0, "explication": "Un désaccord entraîne une suspension des négociations."}, {"type": "complete_the_words", "niveau": 5, "texte": "The committee's decision was widely regarded as ar_itrary and unfair.", "question": "Which word completes the sentence?", "choix": ["arbitrary", "accurate", "adequate", "apparent"], "reponse": 0, "explication": "« Arbitrary » (arbitraire) va avec « unfair » (injuste)."}, {"type": "complete_the_words", "niveau": 5, "texte": "Her rel_ctance to compromise made the talks even more difficult.", "question": "Which word completes the sentence?", "choix": ["reluctance", "relevance", "resemblance", "reliance"], "reponse": 0, "explication": "Le refus de faire des compromis se traduit par « reluctance »."}, {"type": "complete_the_words", "niveau": 6, "texte": "The report's findings were later proven to be utterly sp_rious.", "question": "Which word completes the sentence?", "choix": ["spurious", "strenuous", "spontaneous", "suspicious"], "reponse": 0, "explication": "« Spurious » signifie faux, non fondé, ce qui convient à des conclusions invalidées."}, {"type": "complete_the_words", "niveau": 6, "texte": "His speech was laced with subtle iro_y that few in the audience noticed.", "question": "Which word completes the sentence?", "choix": ["irony", "urgency", "economy", "agony"], "reponse": 0, "explication": "Un discours peut être empreint d'ironie subtile."}, {"type": "daily_life", "niveau": 1, "texte": "STORE HOURS: Monday-Friday 9am-6pm. Saturday 10am-4pm. Closed on Sunday.", "question": "What time does the store open on Saturday?", "choix": ["10am", "9am", "4pm", "6pm"], "reponse": 0, "explication": "Le panneau indique « Saturday 10am-4pm »."}, {"type": "daily_life", "niveau": 1, "texte": "Please recycle. Paper goes in the blue bin. Plastic goes in the green bin.", "question": "Where should paper go?", "choix": ["the blue bin", "the green bin", "the black bin", "the red bin"], "reponse": 0, "explication": "Le texte dit clairement « Paper goes in the blue bin »."}, {"type": "daily_life", "niveau": 2, "texte": "ROOM 204 - Staff Meeting moved to 3:00 PM today. New location: Conference Room B.", "question": "Where will the meeting now take place?", "choix": ["Conference Room B", "Room 204", "at 3:00 PM", "the usual room"], "reponse": 0, "explication": "L'avis précise le nouveau lieu : « Conference Room B »."}, {"type": "daily_life", "niveau": 2, "texte": "Hi Tom, just a reminder that the package will arrive between 1 and 3 pm tomorrow. Someone needs to be home to sign for it.", "question": "What does Tom need to do?", "choix": ["be home to sign for the package", "pick up the package at the store", "pay an extra fee", "reschedule the delivery"], "reponse": 0, "explication": "Le message demande explicitement que quelqu'un soit présent pour signer."}, {"type": "daily_life", "niveau": 3, "texte": "Gluten-free options are marked with a (GF). Please tell your server about any allergies before ordering.", "question": "What should a customer with allergies do?", "choix": ["inform the server before ordering", "order only GF items", "ask for a refund", "skip dessert"], "reponse": 0, "explication": "Le texte demande d'informer le serveur avant de commander."}, {"type": "daily_life", "niveau": 3, "texte": "Members who cancel within 30 days of signing up will receive a full refund. After 30 days, no refunds will be issued.", "question": "What happens if someone cancels on day 40?", "choix": ["no refund", "a full refund", "a partial refund", "a refund in 60 days"], "reponse": 0, "explication": "Après 30 jours, aucun remboursement n'est prévu."}, {"type": "daily_life", "niveau": 4, "texte": "Applicants must have at least two years of relevant experience and be available to start within one month of the offer.", "question": "What is required of the applicant regarding the start date?", "choix": ["start within one month of the offer", "start immediately", "start after training", "start the same day"], "reponse": 0, "explication": "L'annonce précise « within one month of the offer »."}, {"type": "daily_life", "niveau": 4, "texte": "Tenants are responsible for minor repairs under $100; the landlord covers repairs above that amount.", "question": "Who pays for a $250 plumbing repair?", "choix": ["the landlord", "the tenant", "split 50-50", "neither"], "reponse": 0, "explication": "Au-delà de 100 dollars, c'est le propriétaire qui paie."}, {"type": "daily_life", "niveau": 5, "texte": "Claims must be filed within 60 days of the incident. Late claims may be denied unless the delay is justified in writing.", "question": "Under what condition might a late claim still be accepted?", "choix": ["if the delay is justified in writing", "if the claim is under $100", "if filed by phone", "never"], "reponse": 0, "explication": "Le texte prévoit une exception si le retard est justifié par écrit."}, {"type": "daily_life", "niveau": 5, "texte": "Abstracts exceeding 300 words will not be considered. Authors will be notified of acceptance within six weeks of submission.", "question": "What happens to an abstract of 350 words?", "choix": ["it will not be considered", "it will be shortened by the committee", "it will be reviewed as normal", "it will be returned for revision"], "reponse": 0, "explication": "Au-delà de 300 mots, le résumé n'est pas examiné."}, {"type": "daily_life", "niveau": 6, "texte": "Notwithstanding Section 4, either party may terminate this agreement with 90 days' written notice, provided that no material breach has occurred within the preceding 180 days.", "question": "Under this clause, when can a party NOT terminate with 90 days' notice?", "choix": ["if a material breach occurred within the previous 180 days", "if the agreement is older than a year", "if Section 4 applies", "under no circumstances"], "reponse": 0, "explication": "La clause exclut explicitement ce cas de manquement récent."}, {"type": "daily_life", "niveau": 6, "texte": "Entities failing to comply with the disclosure requirements set forth herein shall be subject to penalties commensurate with the severity and duration of the non-compliance.", "question": "What determines the severity of the penalty?", "choix": ["the severity and duration of the non-compliance", "the size of the entity", "the date of disclosure", "the number of previous violations"], "reponse": 0, "explication": "Le texte indique que la sanction est proportionnelle à la gravité et à la durée."}, {"type": "academic_passage", "niveau": 1, "texte": "Bees are insects that live in large groups. They collect nectar from flowers and use it to make honey. Bees also help plants grow by carrying pollen from one flower to another. This process is called pollination.", "question": "What do bees make from nectar?", "choix": ["honey", "pollen", "wax", "sugar"], "reponse": 0, "explication": "Le texte dit que les abeilles utilisent le nectar pour faire du miel."}, {"type": "academic_passage", "niveau": 1, "texte": "Bees are insects that live in large groups. They collect nectar from flowers and use it to make honey. Bees also help plants grow by carrying pollen from one flower to another. This process is called pollination.", "question": "What is pollination?", "choix": ["carrying pollen between flowers", "making honey", "collecting nectar", "building hives"], "reponse": 0, "explication": "Le texte définit la pollinisation comme le transport du pollen entre fleurs."}, {"type": "academic_passage", "niveau": 2, "texte": "The Amazon rainforest is home to millions of species of plants and animals. It produces a large amount of the world's oxygen and absorbs carbon dioxide from the air. Many scientists are worried because large areas of the forest are being cut down every year.", "question": "Why are scientists worried about the Amazon?", "choix": ["large areas are being cut down", "it produces too much oxygen", "it has too many animals", "it absorbs too much carbon"], "reponse": 0, "explication": "Le texte cite la déforestation comme source d'inquiétude."}, {"type": "academic_passage", "niveau": 2, "texte": "The Amazon rainforest is home to millions of species of plants and animals. It produces a large amount of the world's oxygen and absorbs carbon dioxide from the air. Many scientists are worried because large areas of the forest are being cut down every year.", "question": "What does the passage say the Amazon absorbs?", "choix": ["carbon dioxide", "oxygen", "nitrogen", "pollution"], "reponse": 0, "explication": "Le texte précise qu'elle absorbe le dioxyde de carbone."}, {"type": "academic_passage", "niveau": 3, "texte": "During the Industrial Revolution, new machines changed the way goods were produced. Factories replaced small workshops, and many people moved from the countryside to cities to find work. This shift brought both economic growth and serious problems, such as overcrowded housing and pollution.", "question": "What caused many people to move to cities?", "choix": ["to find work in factories", "to escape pollution", "to build new workshops", "to study new machines"], "reponse": 0, "explication": "Le texte indique que les gens cherchaient du travail dans les usines."}, {"type": "academic_passage", "niveau": 3, "texte": "During the Industrial Revolution, new machines changed the way goods were produced. Factories replaced small workshops, and many people moved from the countryside to cities to find work. This shift brought both economic growth and serious problems, such as overcrowded housing and pollution.", "question": "According to the passage, what was a negative result of this shift?", "choix": ["overcrowded housing", "higher wages", "fewer factories", "cleaner air"], "reponse": 0, "explication": "Le texte cite explicitement le surpeuplement des logements."}, {"type": "academic_passage", "niveau": 4, "texte": "Coral reefs, often called the rainforests of the sea, support roughly a quarter of all marine species despite covering less than one percent of the ocean floor. Rising sea temperatures cause coral bleaching, a stress response in which corals expel the algae they depend on for food and color, often leading to the coral's death if conditions do not improve quickly.", "question": "What is coral bleaching?", "choix": ["a stress response where corals expel algae", "a disease that kills algae", "a natural coloring process", "a method of reproduction"], "reponse": 0, "explication": "Le texte définit le blanchissement comme l'expulsion des algues par stress."}, {"type": "academic_passage", "niveau": 4, "texte": "Coral reefs, often called the rainforests of the sea, support roughly a quarter of all marine species despite covering less than one percent of the ocean floor. Rising sea temperatures cause coral bleaching, a stress response in which corals expel the algae they depend on for food and color, often leading to the coral's death if conditions do not improve quickly.", "question": "What does the passage suggest about coral reefs' importance?", "choix": ["they support many species relative to their small area", "they cover most of the ocean floor", "they are immune to temperature changes", "they produce oxygen for fish"], "reponse": 0, "explication": "Le texte souligne la disproportion entre leur petite surface et leur grande biodiversité."}, {"type": "academic_passage", "niveau": 5, "texte": "Cognitive dissonance refers to the mental discomfort experienced when a person holds two contradictory beliefs, values, or attitudes simultaneously. Psychologists argue that individuals are motivated to reduce this discomfort, often by altering one of the conflicting beliefs, acquiring new information that resolves the contradiction, or minimizing the importance of the conflict altogether.", "question": "According to the passage, how might a person resolve cognitive dissonance?", "choix": ["by altering one of the conflicting beliefs", "by ignoring both beliefs permanently", "by discussing it with others only", "by avoiding all future decisions"], "reponse": 0, "explication": "Le texte liste modifier une croyance comme une des stratégies possibles."}, {"type": "academic_passage", "niveau": 5, "texte": "Cognitive dissonance refers to the mental discomfort experienced when a person holds two contradictory beliefs, values, or attitudes simultaneously. Psychologists argue that individuals are motivated to reduce this discomfort, often by altering one of the conflicting beliefs, acquiring new information that resolves the contradiction, or minimizing the importance of the conflict altogether.", "question": "What best describes cognitive dissonance?", "choix": ["discomfort from holding contradictory beliefs", "a method of making quick decisions", "a type of long-term memory loss", "a strategy for persuading others"], "reponse": 0, "explication": "C'est la définition même donnée en première phrase du texte."}, {"type": "academic_passage", "niveau": 6, "texte": "The epistemological debate between rationalism and empiricism hinges on the extent to which knowledge can be derived independently of sensory experience. Rationalists contend that certain truths, particularly those of mathematics and logic, are accessible through reason alone, whereas empiricists maintain that all substantive knowledge ultimately originates in, and must be validated by, sensory observation.", "question": "What is the central disagreement described in the passage?", "choix": ["whether knowledge can be derived independently of sensory experience", "whether mathematics is a useful discipline", "whether logic should be taught in schools", "whether sensory observation is reliable"], "reponse": 0, "explication": "Le texte pose ce point comme l'enjeu central du débat."}, {"type": "academic_passage", "niveau": 6, "texte": "The epistemological debate between rationalism and empiricism hinges on the extent to which knowledge can be derived independently of sensory experience. Rationalists contend that certain truths, particularly those of mathematics and logic, are accessible through reason alone, whereas empiricists maintain that all substantive knowledge ultimately originates in, and must be validated by, sensory observation.", "question": "According to the passage, what do empiricists claim?", "choix": ["knowledge must be validated by sensory observation", "truths of mathematics require no evidence", "reason alone is sufficient for all knowledge", "sensory experience is irrelevant to knowledge"], "reponse": 0, "explication": "Le texte attribue cette position précisément aux empiristes."}]};
+const LISTENING = {"epreuve": "Listening", "description_format": "Cliquez sur « Écouter » pour entendre le texte, lu par la synthèse vocale de votre navigateur en anglais. Comme à l'examen officiel, vous ne disposez d'aucune transcription avant de répondre : écoutez d'abord, répondez ensuite.", "nb_questions_officiel": 47, "duree_minutes": 29, "types_officiels": [{"code": "choose_response", "nom": "Listen and Choose a Response"}, {"code": "conversation", "nom": "Listen to a Conversation"}, {"code": "announcement", "nom": "Listen to an Announcement"}, {"code": "academic_talk", "nom": "Listen to an Academic Talk"}], "questions": [{"type": "choose_response", "niveau": 1, "texte": "Nice to meet you. My name is Anna.", "question": "What is the best response?", "choix": ["Nice to meet you too, I'm Marco.", "I'm fine, thanks.", "See you later.", "That's too expensive."], "reponse": 0, "explication": "Une présentation appelle une présentation en retour."}, {"type": "choose_response", "niveau": 2, "texte": "Excuse me, is this seat taken?", "question": "What is the best response?", "choix": ["No, go ahead.", "I'm sorry to hear that.", "It's five dollars.", "Yes, I agree."], "reponse": 0, "explication": "On répond à une demande sur un siège libre par une autorisation."}, {"type": "choose_response", "niveau": 3, "texte": "Would you mind turning down the music a little?", "question": "What is the best response?", "choix": ["Sure, no problem.", "It's on the table.", "I'll be there in a minute.", "That's a great idea."], "reponse": 0, "explication": "C'est une demande polie, qui appelle un accord simple."}, {"type": "choose_response", "niveau": 4, "texte": "I was wondering if you could cover my shift on Friday.", "question": "What is the best response?", "choix": ["Let me check my schedule and get back to you.", "It's closed on Fridays.", "I already covered it last week.", "The shift starts at nine."], "reponse": 0, "explication": "Une demande d'échange d'horaire appelle une réponse qui engage à vérifier."}, {"type": "choose_response", "niveau": 5, "texte": "Honestly, I'm not convinced the new policy will solve the problem.", "question": "What is the best response?", "choix": ["I see your point, but I think it addresses the root cause.", "The policy starts next Monday.", "I haven't read the policy yet.", "That's not my department."], "reponse": 0, "explication": "La remarque exprime un doute argumenté ; la meilleure réponse engage le débat avec une contre-opinion."}, {"type": "choose_response", "niveau": 6, "texte": "Given the circumstances, I think we ought to reconsider the whole proposal.", "question": "What is the best response?", "choix": ["That's a fair assessment; let's revisit the budget section first.", "The proposal was submitted yesterday.", "I'll print more copies.", "We already voted on it."], "reponse": 0, "explication": "Une remarque nuancée sur une proposition appelle une réponse qui reconnaît le point et propose une suite concrète."}, {"type": "conversation", "niveau": 1, "texte": "A: Do you want tea or coffee? B: Coffee, please, with milk.", "question": "What does B want?", "choix": ["coffee with milk", "tea with milk", "coffee with sugar", "tea with no milk"], "reponse": 0, "explication": "B répond clairement « Coffee, please, with milk »."}, {"type": "conversation", "niveau": 2, "texte": "A: Where's the nearest bus stop? B: It's just around the corner, next to the bakery.", "question": "Where is the bus stop?", "choix": ["next to the bakery", "inside the bakery", "across from the station", "two blocks away"], "reponse": 0, "explication": "B situe l'arrêt de bus à côté de la boulangerie."}, {"type": "conversation", "niveau": 3, "texte": "A: Can we move our meeting to Thursday? B: Thursday doesn't work for me, but Friday morning is free.", "question": "When can B meet?", "choix": ["Friday morning", "Thursday morning", "Thursday afternoon", "Friday afternoon"], "reponse": 0, "explication": "B propose le vendredi matin comme créneau disponible."}, {"type": "conversation", "niveau": 4, "texte": "A: I heard the flight got delayed. B: Yes, it's now leaving three hours later than planned, around 9 PM.", "question": "What time will the flight leave?", "choix": ["around 9 PM", "at 6 PM", "three hours early", "at midnight"], "reponse": 0, "explication": "B donne l'heure précise du nouveau départ."}, {"type": "conversation", "niveau": 5, "texte": "A: I'm torn between the two job offers. B: Well, the salary is similar, but one offers much better long-term growth.", "question": "What does B suggest is the main difference between the offers?", "choix": ["long-term growth potential", "the salary", "the location", "the working hours"], "reponse": 0, "explication": "B compare les offres sur le potentiel d'évolution plutôt que le salaire."}, {"type": "conversation", "niveau": 6, "texte": "A: The board seemed skeptical about the merger. B: True, though their concerns were more about the valuation than the strategic fit.", "question": "According to B, what was the board mainly concerned about?", "choix": ["the valuation", "the strategic fit", "the timing", "the staff"], "reponse": 0, "explication": "B précise que la valorisation inquiétait davantage le conseil que la cohérence stratégique."}, {"type": "announcement", "niveau": 1, "texte": "Attention passengers: the train to Boston will depart from platform 3.", "question": "Which platform?", "choix": ["3", "2", "5", "1"], "reponse": 0, "explication": "L'annonce indique directement « platform 3 »."}, {"type": "announcement", "niveau": 2, "texte": "Good morning shoppers. Our store will close early today at 5 PM for inventory.", "question": "What time does the store close today?", "choix": ["5 PM", "6 PM", "8 PM", "noon"], "reponse": 0, "explication": "L'annonce précise une fermeture anticipée à 17h."}, {"type": "announcement", "niveau": 3, "texte": "This is a reminder that the library will be closed this weekend for maintenance and will reopen Monday morning.", "question": "When does the library reopen?", "choix": ["Monday morning", "this weekend", "Monday evening", "next Friday"], "reponse": 0, "explication": "La réouverture est annoncée pour lundi matin."}, {"type": "announcement", "niveau": 4, "texte": "Due to a scheduling conflict, tonight's lecture has been moved from the main auditorium to Room 112 in the science building.", "question": "Where is tonight's lecture now?", "choix": ["Room 112 in the science building", "the main auditorium", "cancelled entirely", "outside"], "reponse": 0, "explication": "L'annonce donne le nouveau lieu précis."}, {"type": "announcement", "niveau": 5, "texte": "Passengers connecting to flight 204 should proceed directly to gate 22, as boarding has already begun and will close in ten minutes.", "question": "What should connecting passengers do?", "choix": ["proceed directly to gate 22", "wait at gate 20", "check in again", "collect their luggage first"], "reponse": 0, "explication": "L'annonce demande de se rendre directement à la porte 22."}, {"type": "announcement", "niveau": 6, "texte": "Please note that, owing to unforeseen structural inspections, the north wing will remain inaccessible until further notice, and all previously scheduled appointments there have been reassigned to the south wing.", "question": "What happened to appointments originally in the north wing?", "choix": ["they were reassigned to the south wing", "they were cancelled permanently", "they remain in the north wing", "they were moved online"], "reponse": 0, "explication": "L'annonce précise que les rendez-vous ont été réaffectés à l'aile sud."}, {"type": "academic_talk", "niveau": 1, "texte": "Today we will talk about the water cycle. Water evaporates from the ocean, forms clouds, and falls back to earth as rain.", "question": "What happens after water evaporates?", "choix": ["it forms clouds", "it becomes ice", "it falls as snow only", "it disappears"], "reponse": 0, "explication": "L'exposé décrit l'ordre : évaporation puis formation de nuages."}, {"type": "academic_talk", "niveau": 2, "texte": "Plants need sunlight, water, and carbon dioxide to grow. Through photosynthesis, they turn these into energy and oxygen.", "question": "What do plants produce through photosynthesis?", "choix": ["energy and oxygen", "water and carbon dioxide", "sunlight and soil", "pollen and nectar"], "reponse": 0, "explication": "La photosynthèse transforme les éléments reçus en énergie et oxygène."}, {"type": "academic_talk", "niveau": 3, "texte": "In economics, supply and demand determine prices. When demand increases while supply stays the same, prices generally rise.", "question": "What happens to prices when demand increases and supply stays the same?", "choix": ["prices rise", "prices fall", "prices stay the same", "prices disappear"], "reponse": 0, "explication": "C'est le mécanisme de base décrit dans l'exposé."}, {"type": "academic_talk", "niveau": 4, "texte": "Today's lecture examines how urbanization affects local climates. Cities tend to be warmer than surrounding rural areas, a phenomenon known as the urban heat island effect, largely due to concrete and asphalt absorbing heat.", "question": "What causes the urban heat island effect according to the lecture?", "choix": ["concrete and asphalt absorbing heat", "tall buildings blocking wind", "cars producing exhaust", "lack of rain in cities"], "reponse": 0, "explication": "L'exposé attribue le phénomène à l'absorption de chaleur par le béton et l'asphalte."}, {"type": "academic_talk", "niveau": 5, "texte": "This talk explores behavioral economics, which challenges the traditional assumption that people always act rationally. Instead, researchers show that cognitive biases often lead individuals to make predictably irrational decisions.", "question": "What does behavioral economics challenge?", "choix": ["the assumption that people always act rationally", "the idea that markets exist", "the use of statistics in economics", "the importance of supply and demand"], "reponse": 0, "explication": "L'exposé indique que cette discipline remet en cause la rationalité supposée des individus."}, {"type": "academic_talk", "niveau": 6, "texte": "Today we consider the replication crisis in psychology, wherein a substantial proportion of published findings fail to be reproduced under similar experimental conditions, raising concerns about publication bias and the overuse of small sample sizes.", "question": "According to the lecture, what raises concern about the replication crisis?", "choix": ["publication bias and small sample sizes", "a lack of funding for psychology", "the popularity of psychology as a major", "the use of large sample sizes"], "reponse": 0, "explication": "L'exposé cite précisément ces deux facteurs comme sources d'inquiétude."}]};
+const SPEAKING = {"epreuve": "Speaking", "description_format": "Deux formats officiels depuis le nouveau TOEFL iBT : « Listen and Repeat » (répéter après écoute, pour travailler la prononciation) et « Take an Interview » (répondre à l'oral à une question, comme dans un entretien).", "duree_minutes": 8, "taches": [{"numero": 1, "nom": "Listen and Repeat", "type": "listen_repeat", "consigne": "Écoutez la phrase modèle (lue par la synthèse vocale en anglais), puis répétez-la à voix haute en essayant de reproduire le rythme et la prononciation. Enregistrez-vous pour vous réécouter et vous comparer au modèle.", "items": [{"niveau": 1, "phrase_en": "I like pizza.", "conseil": "Gardez un rythme régulier, sans accélérer sur « pizza »."}, {"niveau": 1, "phrase_en": "This is my book.", "conseil": "Faites une légère pause après « is »."}, {"niveau": 2, "phrase_en": "Can you help me, please?", "conseil": "Montez légèrement l'intonation à la fin : c'est une question polie."}, {"niveau": 2, "phrase_en": "I go to school every day.", "conseil": "Enchaînez « go to » sans détacher les mots, comme un natif."}, {"niveau": 3, "phrase_en": "I've been living here for three years.", "conseil": "Réduisez « have been » à un son fluide, proche de « I've been »."}, {"niveau": 3, "phrase_en": "She's going to call you later.", "conseil": "Contractez « she is » en « she's », et liez « going to » en « gonna » à l'oral."}, {"niveau": 4, "phrase_en": "If I had known, I would have told you.", "conseil": "Enchaînez « would have » en un seul souffle, sans détacher chaque mot."}, {"niveau": 4, "phrase_en": "He's supposed to arrive around noon.", "conseil": "Travaillez le rythme montant-descendant naturel, pas une lecture plate."}, {"niveau": 5, "phrase_en": "Honestly, I couldn't care less about the outcome.", "conseil": "Insistez sur « honestly » en ouverture : c'est le ton typique d'un natif qui nuance son propos."}, {"niveau": 5, "phrase_en": "It's not that I disagree, it's just more complicated than that.", "conseil": "Marquez une micro-pause avant « it's just », pour l'effet de nuance."}, {"niveau": 6, "phrase_en": "Whatever the committee decides, we'll have to live with the consequences.", "conseil": "Gardez un débit fluide sur toute la phrase, sans ralentir sur les mots longs."}, {"niveau": 6, "phrase_en": "The implications of this decision are, to say the least, far-reaching.", "conseil": "Détachez légèrement « to say the least » comme une incise, avec une intonation descendante."}]}, {"numero": 2, "nom": "Take an Interview", "type": "interview", "consigne": "Répondez à voix haute à la question, comme si un intervieweur vous écoutait en direct. Préparez-vous brièvement, puis parlez sans relire de notes.", "preparation_minutes": 0.5, "duree_parole": "45 secondes à 1 minute", "sujets": ["What do you usually do on weekends?", "Describe a city you would like to visit and explain why.", "Do you prefer working alone or in a team? Why?", "What is one skill you would like to improve this year?", "Talk about a book or movie that influenced you.", "Some people think remote work is better than office work. What is your opinion?", "Describe a challenge you faced recently and how you handled it.", "If you could change one thing about your daily routine, what would it be?", "Explain the advantages and disadvantages of learning a new language as an adult.", "What role does technology play in how you communicate with family?", "Discuss whether universities should require students to study abroad.", "Describe a time when you had to make a quick decision under pressure.", "To what extent should governments regulate artificial intelligence?", "Explain how your perspective on a particular issue has changed over time."]}], "grille": [{"critere": "Fluidité et aisance", "bareme": [{"niveau": 1, "descripteur": "Parole très hésitante, pauses fréquentes, difficile à suivre."}, {"niveau": 2, "descripteur": "Débit lent avec hésitations régulières, effort audible."}, {"niveau": 3, "descripteur": "Débit globalement régulier, quelques hésitations sur les idées complexes."}, {"niveau": 4, "descripteur": "Débit assez naturel, hésitations rares et sans gêner la compréhension."}, {"niveau": 5, "descripteur": "Débit fluide et naturel, proche d'une conversation réelle."}, {"niveau": 6, "descripteur": "Débit totalement fluide, rythme et pauses proches d'un locuteur natif."}]}, {"critere": "Prononciation et proximité d'un locuteur natif", "bareme": [{"niveau": 1, "descripteur": "Prononciation très marquée par la langue maternelle, compréhension difficile."}, {"niveau": 2, "descripteur": "Accent prononcé, certains mots mal prononcés mais le sens reste compréhensible."}, {"niveau": 3, "descripteur": "Accent perceptible mais n'empêche pas la compréhension."}, {"niveau": 4, "descripteur": "Prononciation globalement claire, accent léger."}, {"niveau": 5, "descripteur": "Prononciation proche d'un locuteur natif, intonation naturelle."}, {"niveau": 6, "descripteur": "Prononciation quasi indissociable d'un locuteur natif, intonation et liaisons naturelles."}]}, {"critere": "Cohérence et organisation du propos", "bareme": [{"niveau": 1, "descripteur": "Idées désorganisées, difficile à relier entre elles."}, {"niveau": 2, "descripteur": "Quelques idées présentes mais peu structurées."}, {"niveau": 3, "descripteur": "Propos globalement compréhensible, structure simple."}, {"niveau": 4, "descripteur": "Propos bien organisé, enchaînement logique des idées."}, {"niveau": 5, "descripteur": "Argumentation claire et nuancée, bien structurée."}, {"niveau": 6, "descripteur": "Propos riche, nuancé et parfaitement structuré, digne d'un natif à l'aise à l'oral."}]}, {"critere": "Richesse du vocabulaire et grammaire", "bareme": [{"niveau": 1, "descripteur": "Vocabulaire très limité, erreurs grammaticales fréquentes gênant la compréhension."}, {"niveau": 2, "descripteur": "Vocabulaire basique, erreurs grammaticales régulières."}, {"niveau": 3, "descripteur": "Vocabulaire suffisant pour le sujet, quelques erreurs grammaticales."}, {"niveau": 4, "descripteur": "Vocabulaire varié, grammaire globalement correcte."}, {"niveau": 5, "descripteur": "Vocabulaire riche et précis, grammaire maîtrisée."}, {"niveau": 6, "descripteur": "Vocabulaire étendu et nuancé, grammaire quasi sans erreur, registre adapté."}]}]};
+const WRITING = {"epreuve": "Writing", "description_format": "Trois formats officiels depuis le nouveau TOEFL iBT : « Build a Sentence » (construction grammaticale, corrigée automatiquement), « Write an Email » et « Write for an Academic Discussion » (rédaction libre, à auto-évaluer).", "duree_minutes": 23, "taches": [{"numero": 1, "nom": "Build a Sentence", "type": "build_sentence", "consigne": "Choisissez la phrase correctement construite parmi les quatre propositions.", "items": [{"niveau": 1, "question": "Which sentence is correct?", "choix": ["She is a doctor.", "She are a doctor.", "She is doctor.", "She a doctor is."], "reponse": 0, "explication": "Accord sujet-verbe de base, et article nécessaire devant « doctor »."}, {"niveau": 1, "question": "Which sentence is correct?", "choix": ["They have two cats.", "They has two cats.", "They having two cats.", "They is two cats."], "reponse": 0, "explication": "« They » s'accorde avec « have », pas « has »."}, {"niveau": 2, "question": "Which sentence is correct?", "choix": ["I didn't go to the party yesterday.", "I don't went to the party yesterday.", "I didn't went to the party yesterday.", "I not go to the party yesterday."], "reponse": 0, "explication": "Au passé négatif, on utilise « didn't » suivi de la base verbale."}, {"niveau": 2, "question": "Which sentence is correct?", "choix": ["She has been working here since 2020.", "She has being working here since 2020.", "She have been work here since 2020.", "She is working here since 2020 ago."], "reponse": 0, "explication": "Present perfect continuous : « has been working »."}, {"niveau": 3, "question": "Which sentence correctly joins the two ideas: 'It was raining. We went for a walk.'", "choix": ["Although it was raining, we went for a walk.", "Although it was raining, we went for a walk, but.", "It was raining, so we went for a walk because.", "Despite it was raining, we went for a walk."], "reponse": 0, "explication": "« Although » introduit directement une proposition, sans « but » redondant."}, {"niveau": 3, "question": "Which sentence is correct?", "choix": ["If I were you, I would accept the offer.", "If I was you, I would accept the offer.", "If I were you, I will accept the offer.", "If I am you, I would accept the offer."], "reponse": 0, "explication": "Hypothèse irréelle au présent : « If I were you, I would... »."}, {"niveau": 4, "question": "Which sentence is correct?", "choix": ["By the time she arrives, we will have finished dinner.", "By the time she arrives, we will finish dinner already.", "By the time she will arrive, we have finished dinner.", "By the time she arrived, we will have finished dinner."], "reponse": 0, "explication": "Futur antérieur avec une subordonnée temporelle au présent."}, {"niveau": 4, "question": "Which sentence best combines the ideas: 'The report was late. The manager was not upset.'", "choix": ["Even though the report was late, the manager was not upset.", "The report was late, even though the manager was not upset.", "Because the report was late, the manager was not upset.", "The report was late despite the manager being not upset."], "reponse": 0, "explication": "« Even though » exprime correctement le contraste entre le retard et l'absence de contrariété."}, {"niveau": 5, "question": "Which sentence is correct?", "choix": ["Had I known about the delay, I would have left earlier.", "Had I know about the delay, I would have left earlier.", "If I had known about the delay, I will have left earlier.", "I had known about the delay, I would leave earlier."], "reponse": 0, "explication": "Inversion conditionnelle au passé : « Had I known..., I would have... »."}, {"niveau": 5, "question": "Which sentence is correct?", "choix": ["Not only did she finish the project early, but she also exceeded expectations.", "Not only she finished the project early, but she also exceeded expectations.", "Not only did she finish the project early, but also she exceeded expectations did.", "She not only finished the project early, also exceeded expectations."], "reponse": 0, "explication": "« Not only » en tête de phrase exige l'inversion auxiliaire-sujet."}, {"niveau": 6, "question": "Which sentence is correct?", "choix": ["Were it not for his support, the project would have failed.", "Was it not for his support, the project would have failed.", "If it were not for his support, the project would fail already.", "It were not for his support, the project would have failed."], "reponse": 0, "explication": "Inversion formelle avec « were » dans une structure conditionnelle soutenue."}, {"niveau": 6, "question": "Which sentence is correct?", "choix": ["Rarely have I seen such a compelling argument presented so clearly.", "Rarely I have seen such a compelling argument presented so clearly.", "Rarely did I have seen such a compelling argument presented so clearly.", "Rarely have I see such a compelling argument presented so clearly."], "reponse": 0, "explication": "Un adverbe négatif/restrictif en tête de phrase (« Rarely ») entraîne l'inversion auxiliaire-sujet."}]}, {"numero": 2, "nom": "Write an Email", "type": "write_email", "consigne": "Rédigez un email clair et bien formulé en réponse à la consigne, en adoptant un registre adapté à la situation (formel ou semi-formel selon le cas).", "duree_minutes_cible": 6, "nb_mots_cible": "50 à 100 mots", "sujets": ["Write an email to your landlord explaining that the heating in your apartment is not working and asking for a quick repair.", "Write an email to a colleague asking if they can swap shifts with you next week.", "Write an email to a hotel to request a late check-out for your upcoming stay.", "Write a thank-you email to a mentor who helped you prepare for a job interview.", "Write an email to a company asking for a refund for a defective product you received.", "Write an email to your manager proposing a new idea to improve team communication.", "Write an email to a university admissions office asking about the deadline for a scholarship application.", "Write an email to a client apologizing for a delay in delivering their order and proposing a solution."]}, {"numero": 3, "nom": "Write for an Academic Discussion", "type": "write_academic_discussion", "consigne": "Un professeur pose une question à la classe sur un forum de discussion. Donnez votre avis et justifiez-le avec au moins un argument ou un exemple concret.", "duree_minutes_cible": 10, "nb_mots_cible": "100 à 150 mots", "sujets": ["Your professor asks: 'Should universities require every student to take at least one course outside their main field of study?' Write a response stating your opinion and explaining your reasoning.", "Your professor asks: 'Is it better for students to study in groups or individually?' Share your view with supporting reasons.", "Your professor asks: 'Should employers allow employees to work from home permanently?' Give your opinion and justify it.", "Your professor asks: 'Do you think social media has a mostly positive or mostly negative effect on how people communicate?' Explain your position.", "Your professor asks: 'Should cities invest more in public transportation or in roads for private cars?' State and defend your opinion.", "Your professor asks: 'Is it more important for children to learn practical skills or academic subjects in school?' Explain your reasoning.", "Your professor asks: 'Should artificial intelligence tools be allowed in university coursework?' Share and justify your opinion.", "Your professor asks: 'Is competition or cooperation more important for success in the workplace?' Explain your view."]}], "grille": [{"critere": "Adéquation à la consigne", "bareme": [{"niveau": 1, "descripteur": "Réponse hors sujet ou incomplète par rapport à la consigne."}, {"niveau": 2, "descripteur": "Réponse ne traite qu'une partie de la consigne."}, {"niveau": 3, "descripteur": "Réponse traite la consigne de façon basique."}, {"niveau": 4, "descripteur": "Réponse traite bien la consigne, avec quelques détails pertinents."}, {"niveau": 5, "descripteur": "Réponse traite pleinement la consigne avec des arguments pertinents."}, {"niveau": 6, "descripteur": "Réponse traite la consigne avec précision, nuance et exemples convaincants."}]}, {"critere": "Organisation et cohérence", "bareme": [{"niveau": 1, "descripteur": "Texte désorganisé, sans logique apparente."}, {"niveau": 2, "descripteur": "Quelques idées reliées, mais structure peu claire."}, {"niveau": 3, "descripteur": "Structure simple mais compréhensible (introduction, idées, conclusion basique)."}, {"niveau": 4, "descripteur": "Bonne organisation, transitions globalement claires."}, {"niveau": 5, "descripteur": "Organisation fluide, transitions naturelles entre les idées."}, {"niveau": 6, "descripteur": "Organisation exemplaire, argumentation nuancée et parfaitement enchaînée."}]}, {"critere": "Richesse du vocabulaire", "bareme": [{"niveau": 1, "descripteur": "Vocabulaire très limité et répétitif."}, {"niveau": 2, "descripteur": "Vocabulaire basique, répétitions fréquentes."}, {"niveau": 3, "descripteur": "Vocabulaire suffisant pour le sujet."}, {"niveau": 4, "descripteur": "Vocabulaire varié avec quelques expressions idiomatiques."}, {"niveau": 5, "descripteur": "Vocabulaire riche et précis, choix de mots judicieux."}, {"niveau": 6, "descripteur": "Vocabulaire étendu et nuancé, registre parfaitement adapté."}]}, {"critere": "Correction grammaticale", "bareme": [{"niveau": 1, "descripteur": "Erreurs grammaticales fréquentes qui gênent la compréhension."}, {"niveau": 2, "descripteur": "Erreurs régulières mais le sens reste compréhensible."}, {"niveau": 3, "descripteur": "Quelques erreurs, sans gêner la compréhension globale."}, {"niveau": 4, "descripteur": "Peu d'erreurs, principalement sur des structures complexes."}, {"niveau": 5, "descripteur": "Grammaire globalement maîtrisée, erreurs rares."}, {"niveau": 6, "descripteur": "Grammaire quasi sans erreur, structures complexes bien maîtrisées."}]}]};
+const BAREME = {"titre": "Échelle de notation du TOEFL iBT (nouveau format depuis le 21 janvier 2026)", "avertissement": "Grille reconstituée à partir des pages officielles ETS consultées le 14 octobre 2026. L'ETS ne publie pas le détail exact des formules de conversion des scores bruts vers l'échelle finale pour les épreuves d'expression orale et écrite : les estimations de niveau proposées dans cette application reposent sur une auto-évaluation personnelle, pas sur l'algorithme réel de notation de l'ETS.", "objectif_niveau": "Cette application vise d'abord un bon niveau d'anglais général, à l'oral en priorité, plutôt qu'un score d'inscription précis à un examen réel. Repère indicatif : niveau 4/6 (environ B2) pour un anglais professionnel courant, niveau 5/6 (environ C1) pour une aisance proche d'un locuteur natif.", "note_immigration_canada": "Pour les points supplémentaires liés à l'anglais dans les volets d'Entrée express vers le Canada, ce sont les tests IELTS General Training ou CELPIP General qui sont reconnus, pas le TOEFL. Le TOEFL sert surtout aux admissions universitaires et à certaines démarches professionnelles. Si l'objectif final est l'immigration via les points linguistiques, vérifier sur canada.ca lequel de ces deux tests est le plus pertinent.", "echelle_1_6": [{"niveau": 1, "cecrl_approx": "A1", "descripteur": "Compréhension et expression très limitées, uniquement sur des énoncés simples et familiers."}, {"niveau": 2, "cecrl_approx": "A2", "descripteur": "Communication de base sur des sujets quotidiens, avec des phrases courtes et simples."}, {"niveau": 3, "cecrl_approx": "B1", "descripteur": "Communication autonome sur des sujets familiers, avec des erreurs qui n'empêchent pas la compréhension."}, {"niveau": 4, "cecrl_approx": "B2", "descripteur": "Communication efficace sur des sujets variés, y compris abstraits, avec une bonne aisance."}, {"niveau": 5, "cecrl_approx": "C1", "descripteur": "Communication fluide et nuancée, proche d'un niveau professionnel avancé."}, {"niveau": 6, "cecrl_approx": "C2", "descripteur": "Maîtrise quasi native, à l'aise dans n'importe quel contexte académique ou professionnel."}], "avertissement_echelle": "Correspondance CECRL approximative et non officielle : l'alignement exact publié par l'ETS entre son échelle 1-6 et le CECRL n'a pas été trouvé lors de la vérification du 14 octobre 2026. Les niveaux ci-dessus sont une estimation construite pour donner des repères pédagogiques, pas une équivalence certifiée.", "format_test": {"duree_totale_indicative": "environ 1 h 30 à 2 h selon les sources consultées (le test est partiellement adaptatif pour la compréhension)", "ordre_officiel": "Reading, Listening, Writing, Speaking, sans pause programmée (ordre listé sur le site officiel ETS au 14 octobre 2026)", "epreuves": [{"nom": "Reading", "detail": "50 items officiels, 3 formats : Complete the Words, Read in Daily Life, Read an Academic Passage", "duree_minutes": 30}, {"nom": "Listening", "detail": "47 items officiels, 4 formats : Listen and Choose a Response, Listen to a Conversation, Listen to an Announcement, Listen to an Academic Talk", "duree_minutes": 29}, {"nom": "Writing", "detail": "12 items officiels, 3 formats : Build a Sentence, Write an Email, Write for an Academic Discussion", "duree_minutes": 23}, {"nom": "Speaking", "detail": "11 items officiels, 2 formats : Listen and Repeat, Take an Interview", "duree_minutes": 8}], "notation": "Depuis le 21 janvier 2026, chaque épreuve est notée sur une échelle de 1 à 6 par demi-point, plus une note globale qui est la moyenne des quatre notes d'épreuve, arrondie au demi-point le plus proche.", "transition": "Pendant une période de transition de deux ans après janvier 2026, un score global équivalent sur l'ancienne échelle (0-120, point médian de la plage correspondante) est aussi indiqué sur le relevé de notes officiel.", "changement_officiel": "Le changement du 21 janvier 2026 porte sur l'échelle de notation, présentée par l'ETS comme mieux alignée sur le CECRL. Les pages consultées ne mentionnent pas de changement du contenu des épreuves lié à cette date."}, "sources": ["ETS, « Test Content and Structure », page officielle TOEFL iBT (ets.org)", "ETS, « Understanding TOEFL Scores », page officielle TOEFL iBT (ets.org)", "Vérification effectuée le 14 octobre 2026 ; le format ayant changé très récemment, à recontrôler sur ets.org avant toute inscription réelle."]};
+
+const LEVELS = [1,2,3,4,5,6];
+const CECRL_APPROX = {1:'A1', 2:'A2', 3:'B1', 4:'B2', 5:'C1', 6:'C2'};
+const EMAIL_TARGET = [50,100];
+const DISCUSSION_TARGET = [100,150];
+const STORAGE_KEY = 'toefl_anglais_progress_v1';
+
+function qs(s,el){ return (el||document).querySelector(s); }
+function qsa(s,el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); }
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function fmtPct(n,d){ return d? Math.round(100*n/d)+'%' : '—'; }
+function escapeHtml(s){ return String(s===null||s===undefined?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+const esc = escapeHtml;
+function roundHalf(n){ return Math.round(n*2)/2; }
+function cecrlLabel(level){ if(level===null||level===undefined) return ''; const r=Math.max(1,Math.min(6,Math.round(level))); return '≈ '+CECRL_APPROX[r]; }
+
+function defaultProgress(){
+  return {
+    reading:{history:[]},
+    listening:{history:[]},
+    speaking:{ listen_repeat:{attempts:[]}, interview:{attempts:[]} },
+    writing:{ build_sentence:{history:[]}, write_email:{attempts:[]}, write_academic_discussion:{attempts:[]} }
+  };
+}
+/* Rien de ce qui vient du stockage n'atteint la page sans être reconstruit :
+   seules les clés connues sont reprises, chaque valeur est retypée (nombre
+   borné, date ISO, texte présent dans la banque), le reste est ignoré. */
+function lireEntier(v, min, max){ const n = Number(v); return (Number.isFinite(n) && n>=min && n<=max) ? Math.round(n) : null; }
+function lireNote(v){ const n = Number(v); return (Number.isFinite(n) && n>=1 && n<=6) ? roundHalf(n) : null; }
+function lireDate(v){ return (typeof v==='string' && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(v)) ? v : null; }
+function liste(v, max){ return Array.isArray(v) ? v.slice(-max) : []; }
+function nettoyerSessions(v){
+  return liste(v, 20).map(function(h){
+    if (!h || typeof h!=='object') return null;
+    const total = lireEntier(h.total, 1, 1000), score = lireEntier(h.score, 0, 1000), date = lireDate(h.date);
+    if (total===null || score===null || score>total || date===null) return null;
+    const parNiveau = {};
+    LEVELS.forEach(function(l){
+      const s = h.parNiveau && h.parNiveau[l];
+      const t = s ? lireEntier(s.total, 0, 1000) : 0, c = s ? lireEntier(s.correct, 0, 1000) : 0;
+      parNiveau[l] = (t===null || c===null || c>t) ? {correct:0,total:0} : {correct:c,total:t};
+    });
+    return { date:date, score:score, total:total, pct:Math.round(100*score/total), parNiveau:parNiveau };
+  }).filter(Boolean);
+}
+function nettoyerEssais(v, champ, valeursPermises){
+  return liste(v, 30).map(function(a){
+    if (!a || typeof a!=='object') return null;
+    const note = lireNote(a.note), date = lireDate(a.date);
+    if (note===null || date===null) return null;
+    const e = { date:date, note:note };
+    if (valeursPermises.indexOf(a[champ])>=0) e[champ] = a[champ];
+    return e;
+  }).filter(Boolean);
+}
+function loadProgress(){
+  const d = defaultProgress();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return d;
+    const p = JSON.parse(raw);
+    if (!p || typeof p!=='object') return d;
+    const g = function(o, k){ return (o && typeof o==='object') ? o[k] : undefined; };
+    const phrases = SPEAKING.taches.find(function(t){ return t.type==='listen_repeat'; }).items.map(function(i){ return i.phrase_en; });
+    const sujetsIv = SPEAKING.taches.find(function(t){ return t.type==='interview'; }).sujets;
+    const sujetsEm = WRITING.taches.find(function(t){ return t.type==='write_email'; }).sujets;
+    const sujetsDi = WRITING.taches.find(function(t){ return t.type==='write_academic_discussion'; }).sujets;
+    d.reading.history = nettoyerSessions(g(p.reading,'history'));
+    d.listening.history = nettoyerSessions(g(p.listening,'history'));
+    d.writing.build_sentence.history = nettoyerSessions(g(g(p.writing,'build_sentence'),'history'));
+    d.speaking.listen_repeat.attempts = nettoyerEssais(g(g(p.speaking,'listen_repeat'),'attempts'), 'phrase', phrases);
+    d.speaking.interview.attempts = nettoyerEssais(g(g(p.speaking,'interview'),'attempts'), 'sujet', sujetsIv);
+    d.writing.write_email.attempts = nettoyerEssais(g(g(p.writing,'write_email'),'attempts'), 'sujet', sujetsEm);
+    d.writing.write_academic_discussion.attempts = nettoyerEssais(g(g(p.writing,'write_academic_discussion'),'attempts'), 'sujet', sujetsDi);
+  } catch(e) {}
+  return d;
+}
+function saveProgress(p){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch(e) {}
+}
+let PROGRESS = loadProgress();
+
+/* ---------- Thème ---------- */
+(function initTheme(){
+  let saved = null;
+  try { saved = localStorage.getItem('toefl_anglais_theme'); } catch(e) {}
+  if (saved==='dark' || saved==='light') document.documentElement.setAttribute('data-theme', saved);
+  qs('#themeToggle').addEventListener('click', function(){
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('toefl_anglais_theme', next); } catch(e) {}
+  });
+  const wave = qs('#brandWave');
+  if (wave) {
+    let html = '';
+    for (let i=0;i<18;i++){ html += '<span style="height:'+(4+Math.round(Math.random()*12))+'px"></span>'; }
+    wave.innerHTML = html;
+  }
+})();
+
+/* ---------- Menu / routage ---------- */
+const MENU = [
+  {id:'dashboard', label:'Tableau de bord'},
+  {id:'reading', label:'Reading — Lecture'},
+  {id:'listening', label:'Listening — Écoute'},
+  {id:'writing', label:'Writing — Expression écrite'},
+  {id:'speaking', label:'Speaking — Expression orale'},
+  {id:'bareme', label:'Échelle de notation'}
+];
+let currentView = 'dashboard';
+
+function renderMenu(){
+  const el = qs('#menuScroll');
+  el.innerHTML = MENU.map(function(m){
+    return '<button class="menu-item'+(m.id===currentView?' active':'')+'" data-view="'+esc(m.id)+'">'+esc(m.label)+'</button>';
+  }).join('');
+  qsa('.menu-item', el).forEach(function(btn){
+    btn.addEventListener('click', function(){ goTo(btn.getAttribute('data-view')); });
+  });
+}
+function goTo(id){
+  currentView = id;
+  renderMenu();
+  qs('#headerTitle').textContent = MENU.find(function(m){ return m.id===id; }).label;
+  const renderers = { dashboard:renderDashboard, reading:renderReading, listening:renderListening, writing:renderWriting, speaking:renderSpeaking, bareme:renderBareme };
+  renderers[id]();
+  qs('#view').scrollTop = 0;
+  window.scrollTo(0,0);
+}
+
+/* ---------- Synthèse vocale (anglais) ---------- */
+function speak(text, rate){
+  try {
+    if (!('speechSynthesis' in window)) { alert("La synthèse vocale n'est pas disponible dans ce navigateur."); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = rate || 0.95;
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
+/* ---------- Niveau atteint (reading / listening / build a sentence) ---------- */
+function niveauAtteint(history){
+  if (!history || !history.length) return null;
+  let bestNiveau = null, bestSession = null;
+  history.forEach(function(h){
+    let atteint = null;
+    LEVELS.forEach(function(lvl){
+      const stat = h.parNiveau && h.parNiveau[lvl];
+      if (stat && stat.total>0 && stat.correct/stat.total >= 0.6) atteint = lvl;
+    });
+    if (atteint && (bestNiveau===null || atteint > bestNiveau)) { bestNiveau = atteint; bestSession = h; }
+  });
+  const displaySession = bestSession || history.reduce(function(a,b){ return b.pct>a.pct?b:a; }, history[0]);
+  return { session: displaySession, niveau: bestNiveau };
+}
+function bestNote(attempts){
+  if (!attempts || !attempts.length) return null;
+  return Math.max.apply(null, attempts.map(function(a){ return a.note; }));
+}
+function levelBadge(level){
+  if (level===null || level===undefined) return '<span class="stamp neutral">non évalué</span>';
+  if (level>=4) return '<span class="stamp ok">niveau '+level+'/6 ('+cecrlLabel(level)+')</span>';
+  if (level>=2.5) return '<span class="stamp warn">niveau '+level+'/6 ('+cecrlLabel(level)+')</span>';
+  return '<span class="stamp no">niveau '+level+'/6 ('+cecrlLabel(level)+')</span>';
+}
+
+function speakingLevelInfo(){
+  const lr = bestNote(PROGRESS.speaking.listen_repeat.attempts);
+  const iv = bestNote(PROGRESS.speaking.interview.attempts);
+  const vals = [lr, iv].filter(function(v){ return v!==null; });
+  if (!vals.length) return null;
+  return roundHalf(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+}
+function writingLevelInfo(){
+  const bs = niveauAtteint(PROGRESS.writing.build_sentence.history);
+  const em = bestNote(PROGRESS.writing.write_email.attempts);
+  const disc = bestNote(PROGRESS.writing.write_academic_discussion.attempts);
+  const vals = [bs && bs.niveau, em, disc].filter(function(v){ return v!==null && v!==undefined; });
+  if (!vals.length) return null;
+  return roundHalf(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+}
+function globalLevelInfo(){
+  const r = niveauAtteint(PROGRESS.reading.history);
+  const l = niveauAtteint(PROGRESS.listening.history);
+  const s = speakingLevelInfo();
+  const w = writingLevelInfo();
+  const vals = [r&&r.niveau, l&&l.niveau, s, w].filter(function(v){ return v!==null && v!==undefined; });
+  if (!vals.length) return null;
+  return roundHalf(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+}
+
+/* ---------- Tableau de bord ---------- */
+function renderDashboard(){
+  const rInfo = niveauAtteint(PROGRESS.reading.history);
+  const lInfo = niveauAtteint(PROGRESS.listening.history);
+  const sLevel = speakingLevelInfo();
+  const wLevel = writingLevelInfo();
+  const gLevel = globalLevelInfo();
+  qs('#view').innerHTML = ''+
+    '<h1>Tableau de bord</h1>'+
+    '<p class="lead">Entraînement aux quatre compétences du nouveau TOEFL iBT (format du 21 janvier 2026), hors ligne, sans aucune donnée transmise.</p>'+
+    '<div class="banner"><b>Objectif :</b> '+esc(BAREME.objectif_niveau)+'</div>'+
+    '<div class="global-level"><div class="digit">'+(gLevel!==null? gLevel+'/6' : '—')+'</div><div class="txt">Niveau global estimé'+(gLevel!==null? ' ('+cecrlLabel(gLevel)+')' : '')+', moyenne des quatre compétences — à la façon du calcul officiel ETS depuis 2026. Repère pédagogique personnel, pas un score certifié.</div></div>'+
+    '<div class="card-grid">'+
+      '<div class="skill-card"><div class="tag">1. Reading</div><h3>Lecture</h3>'+
+      '<div class="fmt">'+esc(READING.nb_questions_officiel)+' items officiels · '+esc(READING.duree_minutes)+' min à l\'examen</div>'+
+      '<div class="result">Meilleure session : '+(rInfo? rInfo.session.score+'/'+rInfo.session.total+' ('+fmtPct(rInfo.session.score, rInfo.session.total)+')' : 'aucune')+'</div>'+
+      '<div class="result">Niveau estimé : '+levelBadge(rInfo && rInfo.niveau)+'</div>'+
+      '<button class="btn" data-go="reading">S\'entraîner →</button></div>'+
+
+      '<div class="skill-card"><div class="tag">2. Listening</div><h3>Écoute</h3>'+
+      '<div class="fmt">'+esc(LISTENING.nb_questions_officiel)+' items officiels · '+esc(LISTENING.duree_minutes)+' min à l\'examen</div>'+
+      '<div class="result">Meilleure session : '+(lInfo? lInfo.session.score+'/'+lInfo.session.total+' ('+fmtPct(lInfo.session.score, lInfo.session.total)+')' : 'aucune')+'</div>'+
+      '<div class="result">Niveau estimé : '+levelBadge(lInfo && lInfo.niveau)+'</div>'+
+      '<button class="btn" data-go="listening">S\'entraîner →</button></div>'+
+
+      '<div class="skill-card"><div class="tag">3. Writing</div><h3>Expression écrite</h3>'+
+      '<div class="fmt">'+esc(WRITING.duree_minutes)+' min à l\'examen · Build a Sentence, Write an Email, Write for an Academic Discussion</div>'+
+      '<div class="result">Niveau estimé (combiné) : '+levelBadge(wLevel)+'</div>'+
+      '<button class="btn" data-go="writing">S\'entraîner →</button></div>'+
+
+      '<div class="skill-card"><div class="tag">4. Speaking</div><h3>Expression orale</h3>'+
+      '<div class="fmt">'+esc(SPEAKING.duree_minutes)+' min à l\'examen · Listen and Repeat, Take an Interview</div>'+
+      '<div class="result">Niveau estimé (combiné) : '+levelBadge(sLevel)+'</div>'+
+      '<button class="btn rec" data-go="speaking">🎙 S\'entraîner →</button></div>'+
+    '</div>'+
+    '<p class="disclaimer">Ces résultats sont des repères d\'entraînement personnels, construits à partir de vos propres réponses et auto-évaluations. Ils ne remplacent pas une correction par un examinateur agréé ni le score obtenu le jour du test officiel. Consultez la page « Échelle de notation » pour le détail du nouveau format 2026 et ses limites.</p>'+
+    '<p><button class="btn ghost" id="resetProgress">Réinitialiser ma progression</button></p>';
+  qsa('[data-go]').forEach(function(b){ b.addEventListener('click', function(){ goTo(b.getAttribute('data-go')); }); });
+  qs('#resetProgress').addEventListener('click', function(){
+    if (confirm('Effacer toute votre progression enregistrée sur cet appareil ?')) {
+      PROGRESS = defaultProgress();
+      saveProgress(PROGRESS);
+      renderDashboard();
+    }
+  });
+}
+
+/* ---------- Moteur QCM commun (reading / listening / build a sentence) ---------- */
+let qState = null;
+
+function qcmPool(domain){
+  if (domain==='reading') return READING.questions;
+  if (domain==='listening') return LISTENING.questions;
+  if (domain==='build_sentence') return WRITING.taches.find(function(t){ return t.type==='build_sentence'; }).items;
+  return [];
+}
+function qcmTypes(domain){
+  if (domain==='reading') return READING.types_officiels;
+  if (domain==='listening') return LISTENING.types_officiels;
+  return null;
+}
+function qcmHistoryRef(domain){
+  if (domain==='reading') return PROGRESS.reading;
+  if (domain==='listening') return PROGRESS.listening;
+  if (domain==='build_sentence') return PROGRESS.writing.build_sentence;
+}
+function qcmLabel(domain){
+  if (domain==='reading') return READING.epreuve;
+  if (domain==='listening') return LISTENING.epreuve;
+  if (domain==='build_sentence') return 'Build a Sentence';
+}
+
+function startQcmSession(domain, type, level, containerId){
+  let pool = qcmPool(domain);
+  pool = pool.filter(function(q){ return (type==='all' || q.type===type) && (level==='all' || q.niveau===level); });
+  pool = shuffle(pool);
+  const n = Math.min(15, pool.length);
+  qState = { domain:domain, containerId:containerId||'view', order:pool.slice(0,n), index:0, score:0, answered:false, selected:null, parNiveau:{} };
+  LEVELS.forEach(function(l){ qState.parNiveau[l] = {correct:0,total:0}; });
+  renderQcmQuestion(domain, qState.containerId);
+}
+
+function renderQcmPicker(domain){
+  const types = qcmTypes(domain);
+  let html = '';
+  if (types) {
+    html += '<div class="filter-label">Format d\'item</div><div class="level-tags" id="typeTags">'+
+      '<button class="level-tag active" data-type="all">Tous les formats</button>'+
+      types.map(function(t){ return '<button class="level-tag" data-type="'+esc(t.code)+'">'+esc(t.nom)+'</button>'; }).join('')+
+      '</div>';
+  }
+  html += '<div class="filter-label">Niveau</div><div class="level-tags" id="levelTags">'+
+    '<button class="level-tag active" data-lvl="all">Tous niveaux (session mélangée)</button>'+
+    LEVELS.map(function(l){ return '<button class="level-tag" data-lvl="'+l+'">Niveau '+l+' ('+CECRL_APPROX[l]+')</button>'; }).join('')+
+    '</div>'+
+    '<div class="btn-row"><button class="btn" id="btnStartQcm">Démarrer la session (15 questions max)</button></div>';
+  return html;
+}
+
+function renderQcmQuestion(domain, containerId){
+  containerId = containerId || 'view';
+  const view = qs('#'+containerId);
+  const titleTag = containerId==='view' ? 'h1' : 'h2';
+  if (!qState || qState.domain!==domain) {
+    const pool = qcmPool(domain);
+    view.innerHTML = '<'+titleTag+'>'+esc(qcmLabel(domain))+'</'+titleTag+'>'+
+      '<p class="lead">'+esc( domain==='reading' ? READING.description_format : domain==='listening' ? LISTENING.description_format : WRITING.taches.find(function(t){return t.type==='build_sentence';}).consigne )+'</p>'+
+      renderQcmPicker(domain)+
+      '<p class="disclaimer">La banque compte actuellement '+pool.length+' questions, réparties sur les 6 niveaux de l\'échelle 1-6.</p>';
+    let selType = 'all', selLvl = 'all';
+    qsa('[data-type]', view).forEach(function(b){
+      b.addEventListener('click', function(){ selType = b.getAttribute('data-type'); qsa('[data-type]', view).forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); });
+    });
+    qsa('[data-lvl]', view).forEach(function(b){
+      b.addEventListener('click', function(){ selLvl = b.getAttribute('data-lvl'); qsa('[data-lvl]', view).forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); });
+    });
+    qs('#btnStartQcm', view).addEventListener('click', function(){
+      startQcmSession(domain, selType, selLvl==='all' ? 'all' : parseInt(selLvl,10), containerId);
+    });
+    return;
+  }
+  const q = qState.order[qState.index];
+  let html = '<'+titleTag+'>'+esc(qcmLabel(domain))+'</'+titleTag+'>';
+  html += '<div class="progress-line">Question '+(qState.index+1)+' / '+qState.order.length+' · score actuel '+qState.score+'/'+qState.index+'</div>';
+  html += '<div class="question-box">';
+  html += '<div class="question-meta"><span>Niveau '+esc(q.niveau)+' ('+esc(CECRL_APPROX[q.niveau])+')</span><span>'+esc(q.type)+'</span></div>';
+  if (domain==='listening') {
+    html += '<div class="listen-text">'+(qState.answered ? ('<b>Transcript:</b> '+escapeHtml(q.texte)) : "Cliquez sur « Écouter » pour entendre le texte en anglais. Vous pouvez le réécouter autant de fois que nécessaire.")+'</div>';
+    html += '<div class="btn-row"><button class="btn secondary" id="btnListen">🔊 Écouter</button></div>';
+  } else if (q.texte) {
+    html += '<div class="listen-text en">'+escapeHtml(q.texte)+'</div>';
+  }
+  html += '<div class="question-text">'+escapeHtml(q.question)+'</div>';
+  q.choix.forEach(function(c, i){
+    let cls = 'choice-btn';
+    if (qState.answered) {
+      if (i===q.reponse) cls += ' correct';
+      else if (i===qState.selected) cls += ' wrong';
+    }
+    html += '<button class="'+cls+'" data-i="'+i+'" '+(qState.answered?'disabled':'')+'>'+escapeHtml(c)+'</button>';
+  });
+  if (qState.answered) {
+    html += '<div class="explication">'+escapeHtml(q.explication)+'</div>';
+    html += '<div class="btn-row"><button class="btn" id="btnNext">'+(qState.index+1>=qState.order.length? 'Voir le résultat →' : 'Question suivante →')+'</button></div>';
+  }
+  html += '</div>';
+  view.innerHTML = html;
+
+  if (domain==='listening') {
+    qs('#btnListen').addEventListener('click', function(){ speak(q.texte, 0.95); });
+  }
+  qsa('.choice-btn', view).forEach(function(b){
+    b.addEventListener('click', function(){ answerQcm(domain, parseInt(b.getAttribute('data-i'),10)); });
+  });
+  if (qState.answered) qs('#btnNext').addEventListener('click', function(){ nextQcm(domain); });
+}
+
+function answerQcm(domain, i){
+  if (qState.answered) return;
+  qState.answered = true;
+  qState.selected = i;
+  const q = qState.order[qState.index];
+  const correct = i === q.reponse;
+  if (correct) qState.score++;
+  const stat = qState.parNiveau[q.niveau];
+  stat.total++;
+  if (correct) stat.correct++;
+  renderQcmQuestion(domain, qState.containerId);
+}
+function nextQcm(domain){
+  qState.index++;
+  if (qState.index >= qState.order.length) { finishQcm(domain); return; }
+  qState.answered = false; qState.selected = null;
+  renderQcmQuestion(domain, qState.containerId);
+}
+function finishQcm(domain){
+  const containerId = qState.containerId || 'view';
+  const total = qState.order.length;
+  const score = qState.score;
+  const parNiveau = qState.parNiveau;
+  const session = { date:new Date().toISOString(), score:score, total:total, pct:Math.round(100*score/total), parNiveau:parNiveau };
+  const ref = qcmHistoryRef(domain);
+  ref.history = ref.history || [];
+  ref.history.push(session);
+  if (ref.history.length > 20) ref.history.shift();
+  saveProgress(PROGRESS);
+
+  const titleTag = containerId==='view' ? 'h1' : 'h2';
+  let html = '<'+titleTag+'>Résultat — '+esc(qcmLabel(domain))+'</'+titleTag+'>';
+  html += '<div class="banner">Score : <b>'+score+' / '+total+'</b> ('+fmtPct(score,total)+')</div>';
+  html += '<h3>Détail par niveau</h3>';
+  html += '<table class="grille-table"><tr><th>Niveau</th><th>Bonnes réponses</th><th>Taux</th></tr>';
+  LEVELS.forEach(function(l){
+    const s = parNiveau[l];
+    if (s.total) html += '<tr><td>'+l+' ('+CECRL_APPROX[l]+')</td><td>'+s.correct+'/'+s.total+'</td><td>'+fmtPct(s.correct,s.total)+'</td></tr>';
+  });
+  html += '</table>';
+  html += '<p class="disclaimer">Ces exercices ne suivent pas l\'algorithme réel de notation de l\'ETS, qui n\'est pas publié dans le détail. Pour progresser, visez d\'abord la réussite régulière des niveaux 4 et 5. Consultez la page « Échelle de notation » pour plus de détails.</p>';
+  const backLabel = domain==='build_sentence' ? "Retour à l'exercice Writing" : 'Retour au tableau de bord';
+  html += '<div class="btn-row"><button class="btn" id="btnRetry">Nouvelle session</button><button class="btn secondary" id="btnDash">'+backLabel+'</button></div>';
+  qState = null;
+  qs('#'+containerId).innerHTML = html;
+  qs('#btnRetry').addEventListener('click', function(){ renderQcmQuestion(domain, containerId); });
+  qs('#btnDash').addEventListener('click', function(){ if (domain==='build_sentence') renderWriting(); else goTo('dashboard'); });
+}
+
+function renderReading(){ if (qState && qState.domain!=='reading') qState=null; renderQcmQuestion('reading'); }
+function renderListening(){ if (qState && qState.domain!=='listening') qState=null; renderQcmQuestion('listening'); }
+
+/* ---------- Grille d'auto-évaluation commune (1 à 6, par demi-point) ---------- */
+function renderEvalGrid(storeKey, grille, afterSaveLabel){
+  let html = '<h2>Auto-évaluation</h2>';
+  html += '<p class="lead">Évaluez-vous honnêtement sur chaque critère, de 1 (débutant) à 6 (quasi natif). La moyenne, arrondie au demi-point, donne votre niveau estimé pour cet exercice — comme le calcul officiel ETS depuis 2026.</p>';
+  grille.forEach(function(crit, idx){
+    html += '<div class="slider-row" data-crit="'+idx+'">';
+    html += '<div class="crit-name">'+esc(crit.critere)+' — <span class="val" id="val-'+storeKey+'-'+idx+'">3</span>/6</div>';
+    html += '<input type="range" min="1" max="6" value="3" id="slider-'+storeKey+'-'+idx+'">';
+    html += '<div class="crit-desc" id="desc-'+storeKey+'-'+idx+'">'+esc(crit.bareme[2].descripteur)+'</div>';
+    html += '</div>';
+  });
+  html += '<div class="note-total" id="noteTotal-'+storeKey+'">Niveau estimé : 3/6</div>';
+  html += '<div class="btn-row"><button class="btn" id="btnSaveEval-'+storeKey+'">'+(afterSaveLabel||'Enregistrer ce résultat')+'</button></div>';
+  return html;
+}
+function bindEvalGrid(storeKey, grille, onSave){
+  function recompute(){
+    let total = 0;
+    grille.forEach(function(crit, idx){
+      const slider = qs('#slider-'+storeKey+'-'+idx);
+      if (!slider) return;
+      const v = parseInt(slider.value, 10);
+      total += v;
+      qs('#val-'+storeKey+'-'+idx).textContent = v;
+      qs('#desc-'+storeKey+'-'+idx).textContent = crit.bareme[v-1].descripteur;
+    });
+    const avg = roundHalf(total/grille.length);
+    const el = qs('#noteTotal-'+storeKey);
+    if (el) el.textContent = 'Niveau estimé : '+avg+'/6 ('+cecrlLabel(avg)+')';
+    return avg;
+  }
+  grille.forEach(function(crit, idx){
+    const slider = qs('#slider-'+storeKey+'-'+idx);
+    if (slider) slider.addEventListener('input', recompute);
+  });
+  recompute();
+  const btn = qs('#btnSaveEval-'+storeKey);
+  if (btn) btn.addEventListener('click', function(){ onSave(recompute()); });
+}
+
+/* ---------- Speaking ---------- */
+let spTab = 1;
+let lrState = { phrase:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false };
+let ivState = { sujet:null, mode:'idle', prepSeconds:0, speakSeconds:0, timerHandle:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false };
+
+function lrReset(){ if (lrState.stream) lrState.stream.getTracks().forEach(function(t){t.stop();}); lrState = { phrase:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false }; }
+function ivReset(){ if (ivState.timerHandle) clearInterval(ivState.timerHandle); if (ivState.stream) ivState.stream.getTracks().forEach(function(t){t.stop();}); ivState = { sujet:null, mode:'idle', prepSeconds:0, speakSeconds:0, timerHandle:null, stream:null, recorder:null, chunks:[], audioUrl:null, eval:false }; }
+
+function renderSpeaking(){
+  const tacheLR = SPEAKING.taches.find(function(t){ return t.type==='listen_repeat'; });
+  const tacheIV = SPEAKING.taches.find(function(t){ return t.type==='interview'; });
+  const view = qs('#view');
+  let html = '<h1>'+esc(SPEAKING.epreuve)+'</h1><p class="lead">'+esc(SPEAKING.description_format)+'</p>';
+  html += '<div class="tache-tabs">'+
+    '<button class="tache-tab'+(spTab===1?' active':'')+'" data-t="1">Exercice 1 — '+esc(tacheLR.nom)+'</button>'+
+    '<button class="tache-tab'+(spTab===2?' active':'')+'" data-t="2">Exercice 2 — '+esc(tacheIV.nom)+'</button>'+
+    '</div>';
+  if (spTab===1) html += renderListenRepeat(tacheLR);
+  else html += renderInterview(tacheIV);
+  view.innerHTML = html;
+
+  qsa('.tache-tab', view).forEach(function(b){
+    b.addEventListener('click', function(){ spTab = parseInt(b.getAttribute('data-t'),10); lrReset(); ivReset(); renderSpeaking(); });
+  });
+  if (spTab===1) bindListenRepeat(tacheLR);
+  else bindInterview(tacheIV);
+}
+
+function renderListenRepeat(tache){
+  let html = '<p>'+esc(tache.consigne)+'</p>';
+  html += '<div class="btn-row"><button class="btn secondary" id="btnTirerLR">Tirer une phrase au hasard</button></div>';
+  if (lrState.phrase) {
+    html += '<div class="question-meta"><span>Niveau '+esc(lrState.phrase.niveau)+' ('+esc(CECRL_APPROX[lrState.phrase.niveau])+')</span></div>';
+    html += '<div class="phrase-box en">'+escapeHtml(lrState.phrase.phrase_en)+'</div>';
+    html += '<div class="conseil-box">💡 '+escapeHtml(lrState.phrase.conseil)+'</div>';
+    html += '<div class="btn-row"><button class="btn secondary" id="btnSlow">🐢 Écouter lentement</button><button class="btn secondary" id="btnNormal">▶ Écouter à vitesse normale</button></div>';
+    html += '<div class="audio-box" id="lrAudioZone"></div>';
+    html += '<div class="btn-row"><button class="btn" id="btnLrEval">Terminer et m\'auto-évaluer</button></div>';
+    if (lrState.eval) html += renderEvalGrid('lr', SPEAKING.grille, 'Enregistrer ce résultat');
+  }
+  return html;
+}
+function bindListenRepeat(tache){
+  qs('#btnTirerLR').addEventListener('click', function(){
+    lrReset();
+    lrState.phrase = tache.items[Math.floor(Math.random()*tache.items.length)];
+    renderSpeaking();
+  });
+  if (!lrState.phrase) return;
+  qs('#btnSlow').addEventListener('click', function(){ speak(lrState.phrase.phrase_en, 0.7); });
+  qs('#btnNormal').addEventListener('click', function(){ speak(lrState.phrase.phrase_en, 1.0); });
+  renderMicZone(lrState, 'lrAudioZone');
+  qs('#btnLrEval').addEventListener('click', function(){ lrState.eval = true; renderSpeaking(); });
+  if (lrState.eval) bindEvalGrid('lr', SPEAKING.grille, function(note){
+    PROGRESS.speaking.listen_repeat.attempts.unshift({ date:new Date().toISOString(), phrase:lrState.phrase.phrase_en, note:note });
+    if (PROGRESS.speaking.listen_repeat.attempts.length > 30) PROGRESS.speaking.listen_repeat.attempts.pop();
+    saveProgress(PROGRESS);
+    lrReset();
+    renderSpeaking();
+  });
+}
+
+function fmtMMSS(sec){
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+
+function renderInterview(tache){
+  let html = '<p>'+esc(tache.consigne)+'</p>';
+  html += '<p class="lead">Temps de parole visé : '+esc(tache.duree_parole)+' · préparation : '+Math.round(tache.preparation_minutes*60)+' secondes</p>';
+  html += '<div class="btn-row"><button class="btn secondary" id="btnTirerIV">Tirer une question au hasard</button></div>';
+  if (ivState.sujet) {
+    html += '<div class="sujet-box en">'+escapeHtml(ivState.sujet)+'</div>';
+    html += '<div id="ivTimerZone"></div>';
+    html += '<div class="audio-box" id="ivAudioZone"></div>';
+    html += '<div class="btn-row"><button class="btn" id="btnIvEval">Terminer et m\'auto-évaluer</button></div>';
+    if (ivState.eval) html += renderEvalGrid('iv', SPEAKING.grille, 'Enregistrer ce résultat');
+  }
+  return html;
+}
+function bindInterview(tache){
+  qs('#btnTirerIV').addEventListener('click', function(){
+    ivReset();
+    ivState.sujet = tache.sujets[Math.floor(Math.random()*tache.sujets.length)];
+    renderSpeaking();
+  });
+  if (!ivState.sujet) return;
+  renderIvTimer(tache);
+  renderMicZone(ivState, 'ivAudioZone');
+  qs('#btnIvEval').addEventListener('click', function(){ if (ivState.timerHandle) clearInterval(ivState.timerHandle); ivState.eval = true; renderSpeaking(); });
+  if (ivState.eval) bindEvalGrid('iv', SPEAKING.grille, function(note){
+    PROGRESS.speaking.interview.attempts.unshift({ date:new Date().toISOString(), sujet:ivState.sujet, note:note });
+    if (PROGRESS.speaking.interview.attempts.length > 30) PROGRESS.speaking.interview.attempts.pop();
+    saveProgress(PROGRESS);
+    ivReset();
+    renderSpeaking();
+  });
+}
+function renderIvTimer(tache){
+  const zone = qs('#ivTimerZone');
+  if (!zone) return;
+  if (ivState.mode==='idle') { ivState.mode='prep'; ivState.prepSeconds = Math.round(tache.preparation_minutes*60); }
+  function draw(){
+    const z = qs('#ivTimerZone');
+    if (!z) return;
+    if (ivState.mode==='prep') {
+      z.innerHTML = '<div class="timer-label">Préparation</div><div class="timer">'+fmtMMSS(ivState.prepSeconds)+'</div><div class="btn-row"><button class="btn rec" id="btnIvSpeak">🎙 Commencer à parler</button></div>';
+      qs('#btnIvSpeak').addEventListener('click', function(){ if (ivState.timerHandle) clearInterval(ivState.timerHandle); startIvSpeaking(); });
+    } else if (ivState.mode==='speaking') {
+      z.innerHTML = '<div class="timer-label rec-live"><span class="dot"></span>Temps de parole écoulé (cible : '+esc(tache.duree_parole)+')</div><div class="timer rec">'+fmtMMSS(ivState.speakSeconds)+'</div>';
+    }
+  }
+  if (ivState.mode==='prep') {
+    ivState.timerHandle = setInterval(function(){
+      ivState.prepSeconds--;
+      if (ivState.prepSeconds<=0) { clearInterval(ivState.timerHandle); ivState.prepSeconds=0; }
+      draw();
+    }, 1000);
+  }
+  draw();
+}
+function startIvSpeaking(){
+  ivState.mode='speaking'; ivState.speakSeconds=0;
+  const z = qs('#ivTimerZone');
+  function draw(){ const zz=qs('#ivTimerZone'); if(!zz) return; zz.innerHTML = '<div class="timer-label rec-live"><span class="dot"></span>Temps de parole écoulé</div><div class="timer rec">'+fmtMMSS(ivState.speakSeconds)+'</div>'; }
+  draw();
+  ivState.timerHandle = setInterval(function(){ ivState.speakSeconds++; draw(); }, 1000);
+}
+
+/* ---------- Micro commun (speaking) ---------- */
+function renderMicZone(state, zoneId){
+  const zone = qs('#'+zoneId);
+  if (!zone) return;
+  if (state.audioUrl) {
+    zone.innerHTML = '<div class="audio-box"><audio controls src="'+state.audioUrl+'"></audio></div><div class="btn-row"><button class="btn secondary" id="btnMicRedo-'+zoneId+'">Recommencer l\'enregistrement</button></div>';
+    qs('#btnMicRedo-'+zoneId).addEventListener('click', function(){ startMicRecording(state, zoneId); });
+    return;
+  }
+  zone.innerHTML = '<div class="btn-row"><button class="btn secondary" id="btnMicStart-'+zoneId+'">🎙 Activer le micro pour m\'écouter</button></div>'+
+    '<div class="mic-msg">Facultatif. L\'enregistrement reste uniquement dans votre navigateur, pour vous permettre de vous réécouter ; il n\'est ni envoyé ni conservé après la fermeture de la page.</div>';
+  qs('#btnMicStart-'+zoneId).addEventListener('click', function(){ startMicRecording(state, zoneId); });
+}
+function startMicRecording(state, zoneId){
+  if (!navigator.mediaDevices || !window.MediaRecorder) {
+    const z = qs('#'+zoneId);
+    if (z) z.innerHTML += '<div class="mic-msg">Enregistrement audio non disponible dans ce navigateur. Vous pouvez poursuivre l\'exercice sans vous enregistrer.</div>';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    state.stream = stream;
+    state.recorder = new MediaRecorder(stream);
+    state.chunks = [];
+    state.recorder.ondataavailable = function(e){ state.chunks.push(e.data); };
+    state.recorder.onstop = function(){
+      const blob = new Blob(state.chunks, {type:'audio/webm'});
+      state.audioUrl = URL.createObjectURL(blob);
+      renderMicZone(state, zoneId);
+    };
+    state.recorder.start();
+    const z = qs('#'+zoneId);
+    z.innerHTML = '<div class="btn-row"><button class="btn rec" id="btnMicStop-'+zoneId+'">⏹ Arrêter l\'enregistrement</button></div><div class="mic-msg rec-live"><span class="dot"></span>Enregistrement en cours…</div>';
+    qs('#btnMicStop-'+zoneId).addEventListener('click', function(){ state.recorder.stop(); state.stream.getTracks().forEach(function(t){ t.stop(); }); });
+  }).catch(function(){
+    const z = qs('#'+zoneId);
+    if (z) z.innerHTML += '<div class="mic-msg">Accès au micro refusé ou indisponible. Vous pouvez poursuivre l\'exercice sans vous enregistrer.</div>';
+  });
+}
+
+/* ---------- Writing ---------- */
+let wrTab = 1;
+let eeState = { tacheType:null, sujet:null, mode:'idle', text:'', timerSeconds:0, timerHandle:null, eval:false };
+function eeReset(){ if (eeState.timerHandle) clearInterval(eeState.timerHandle); eeState = { tacheType:eeState.tacheType, sujet:null, mode:'idle', text:'', timerSeconds:0, timerHandle:null, eval:false }; }
+
+function renderWriting(){
+  const bs = WRITING.taches.find(function(t){ return t.type==='build_sentence'; });
+  const em = WRITING.taches.find(function(t){ return t.type==='write_email'; });
+  const disc = WRITING.taches.find(function(t){ return t.type==='write_academic_discussion'; });
+  const view = qs('#view');
+  let html = '<h1>'+esc(WRITING.epreuve)+'</h1><p class="lead">'+esc(WRITING.description_format)+'</p>';
+  html += '<div class="tache-tabs">'+
+    '<button class="tache-tab'+(wrTab===1?' active':'')+'" data-t="1">Exercice 1 — '+esc(bs.nom)+'</button>'+
+    '<button class="tache-tab'+(wrTab===2?' active':'')+'" data-t="2">Exercice 2 — '+esc(em.nom)+'</button>'+
+    '<button class="tache-tab'+(wrTab===3?' active':'')+'" data-t="3">Exercice 3 — '+esc(disc.nom)+'</button>'+
+    '</div>';
+  if (wrTab===1) html += '<div id="wrBsZone"></div>';
+  view.innerHTML = html;
+  qsa('.tache-tab', view).forEach(function(b){
+    b.addEventListener('click', function(){ wrTab = parseInt(b.getAttribute('data-t'),10); qState=null; eeReset(); renderWriting(); });
+  });
+  if (wrTab===1) { renderQcmQuestion('build_sentence', 'wrBsZone'); }
+  else {
+    const tache = wrTab===2 ? em : disc;
+    const type = wrTab===2 ? 'write_email' : 'write_academic_discussion';
+    renderFreeWriting(tache, type);
+  }
+}
+
+function renderFreeWriting(tache, type){
+  if (eeState.tacheType !== type) { eeReset(); eeState.tacheType = type; }
+  const view = qs('#view');
+  let html = '<p>'+esc(tache.consigne)+'</p>';
+  html += '<p class="lead">Longueur visée : '+esc(tache.nb_mots_cible)+' · durée indicative : '+esc(tache.duree_minutes_cible)+' min</p>';
+  html += '<div class="btn-row"><button class="btn secondary" id="btnTirerEe">Tirer un sujet au hasard</button></div>';
+  if (eeState.sujet) {
+    html += '<div class="sujet-box en">'+escapeHtml(eeState.sujet)+'</div>';
+    if (!eeState.eval) {
+      html += '<div id="eeTimerZone"></div>';
+      html += '<textarea class="ee-text" id="eeText" placeholder="Write your response here…">'+escapeHtml(eeState.text)+'</textarea>';
+      html += '<div class="wordcount neutral" id="eeWordcount">0 mot</div>';
+      html += '<div class="btn-row"><button class="btn" id="btnEeTerminer">Terminer et m\'auto-évaluer</button></div>';
+    } else {
+      html += '<div class="listen-text en">'+escapeHtml(eeState.text)+'</div>';
+      html += renderEvalGrid('ee-'+type, WRITING.grille, 'Enregistrer ce résultat');
+    }
+  }
+  view.insertAdjacentHTML('beforeend', html);
+
+  qs('#btnTirerEe').addEventListener('click', function(){
+    eeReset();
+    eeState.tacheType = type;
+    eeState.sujet = tache.sujets[Math.floor(Math.random()*tache.sujets.length)];
+    renderWriting();
+  });
+  if (eeState.sujet && !eeState.eval) {
+    renderEeTimer(tache);
+    const ta = qs('#eeText');
+    updateWordcount();
+    ta.addEventListener('input', function(){ eeState.text = ta.value; updateWordcount(); });
+    qs('#btnEeTerminer').addEventListener('click', function(){
+      if (eeState.timerHandle) clearInterval(eeState.timerHandle);
+      eeState.text = ta.value; eeState.eval = true; renderWriting();
+    });
+  }
+  if (eeState.eval) bindEvalGrid('ee-'+type, WRITING.grille, function(note){
+    PROGRESS.writing[type].attempts.unshift({ date:new Date().toISOString(), sujet:eeState.sujet, note:note });
+    if (PROGRESS.writing[type].attempts.length > 30) PROGRESS.writing[type].attempts.pop();
+    saveProgress(PROGRESS);
+    eeReset();
+    renderWriting();
+  });
+}
+function renderEeTimer(tache){
+  const zone = qs('#eeTimerZone');
+  if (!zone) return;
+  if (!eeState.timerHandle && eeState.timerSeconds===0) { eeState.timerSeconds = tache.duree_minutes_cible*60; }
+  function draw(){
+    const z = qs('#eeTimerZone');
+    if (!z) return;
+    z.innerHTML = '<div class="timer-label">Temps restant indicatif</div><div class="timer'+(eeState.timerSeconds<=30?' rec':'')+'">'+fmtMMSS(eeState.timerSeconds)+'</div>';
+  }
+  if (!eeState.timerHandle) {
+    eeState.timerHandle = setInterval(function(){
+      eeState.timerSeconds--;
+      if (eeState.timerSeconds<=0) { clearInterval(eeState.timerHandle); eeState.timerHandle=null; eeState.timerSeconds=0; }
+      draw();
+    }, 1000);
+  }
+  draw();
+}
+function updateWordcount(){
+  const ta = qs('#eeText');
+  const box = qs('#eeWordcount');
+  if (!ta || !box) return;
+  const words = ta.value.trim().split(/\s+/).filter(function(w){ return w.length>0; });
+  const n = words.length;
+  const target = eeState.tacheType==='write_email' ? EMAIL_TARGET : DISCUSSION_TARGET;
+  let cls = 'neutral', msg = n+' mots';
+  if (n < target[0]*0.8) { cls='warn'; msg += ' — encore court, cible '+target[0]+' à '+target[1]+' mots'; }
+  else if (n <= target[1]*1.3) { cls='ok'; msg += ' — dans la zone visée ('+target[0]+' à '+target[1]+' mots)'; }
+  else { msg += ' — au-delà de la cible ('+target[0]+' à '+target[1]+'), restez pertinent plutôt que long'; }
+  box.className = 'wordcount '+cls;
+  box.textContent = msg;
+}
+
+/* ---------- Échelle de notation ---------- */
+function renderBareme(){
+  let html = '<h1>'+esc(BAREME.titre)+'</h1>';
+  html += '<div class="banner"><b>Objectif :</b> '+esc(BAREME.objectif_niveau)+'</div>';
+  html += '<div class="banner rec"><b>Pour l\'immigration au Canada :</b> '+esc(BAREME.note_immigration_canada)+'</div>';
+  html += '<h2>Échelle 1 à 6 (depuis le 21 janvier 2026)</h2>';
+  html += '<table class="bareme"><tr><th>Niveau</th><th>≈ CECRL</th><th>Repère</th></tr>';
+  BAREME.echelle_1_6.forEach(function(n){
+    html += '<tr><td>'+esc(n.niveau)+'</td><td>'+esc(n.cecrl_approx)+'</td><td class="txt-gauche">'+esc(n.descripteur)+'</td></tr>';
+  });
+  html += '</table>';
+  html += '<p class="disclaimer">'+esc(BAREME.avertissement_echelle)+'</p>';
+  html += '<h2>Format officiel de l\'épreuve</h2>';
+  html += '<table class="grille-table"><tr><th>Épreuve</th><th>Détail</th><th>Durée</th></tr>';
+  BAREME.format_test.epreuves.forEach(function(e){
+    html += '<tr><td>'+esc(e.nom)+'</td><td>'+esc(e.detail)+'</td><td>'+esc(e.duree_minutes)+' min</td></tr>';
+  });
+  html += '</table>';
+  html += '<p><b>Ordre officiel des épreuves :</b> '+esc(BAREME.format_test.ordre_officiel)+'</p>';
+  html += '<p><b>Durée totale indicative :</b> '+esc(BAREME.format_test.duree_totale_indicative)+'</p>';
+  html += '<p><b>Notation :</b> '+esc(BAREME.format_test.notation)+'</p>';
+  html += '<p><b>Transition :</b> '+esc(BAREME.format_test.transition)+'</p>';
+  html += '<p><b>Ce qui a changé :</b> '+esc(BAREME.format_test.changement_officiel)+'</p>';
+  html += '<p class="disclaimer">'+esc(BAREME.avertissement)+'</p>';
+  html += '<h2>Sources</h2><ul>'+BAREME.sources.map(function(s){ return '<li>'+esc(s)+'</li>'; }).join('')+'</ul>';
+  qs('#view').innerHTML = html;
+}
+
+/* ---------- Démarrage ---------- */
+/* Anti-détournement de clics : si un autre site affiche cette page dans un
+   cadre invisible pour faire cliquer le lecteur (micro compris), l'application
+   ne démarre pas. GitHub Pages ne permet pas d'interdire l'encadrement par
+   en-tête HTTP, d'où ce contrôle côté page. */
+let encadree = true;
+try { encadree = window.top !== window.self; } catch(e) {}
+if (encadree) {
+  qs('#view').textContent = "Cette application doit être ouverte directement, pas à l'intérieur d'un autre site.";
+} else {
+  renderMenu();
+  renderDashboard();
+}
+</script>
+</body>
+</html>
